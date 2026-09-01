@@ -1,0 +1,2881 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>NamaTemPoTrainer</title>
+<style>
+  :root{
+    --bg:#1E1A28;
+    --bg-elevated:#2B2438;
+    --bg-elevated-2:#362C48;
+    --border:#453A5C;
+    --text:#F4EEDF;
+    --text-muted:#B3A7C9;
+    --accent:#D6A54C;
+    --accent-soft:#4A3B22;
+    --correct-bg:#6FBF97;
+    --correct-text:#0F2419;
+    --incorrect-bg:#E2897B;
+    --incorrect-text:#3B140D;
+    --focus-ring:#8FD3FF;
+    --danger:#E2897B;
+    --font-display: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", "Noto Sans Mono", monospace;
+    --font-ui: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Yu Gothic UI", "Segoe UI", Roboto, sans-serif;
+    --radius-s:8px;
+    --radius-m:14px;
+    --radius-l:22px;
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html[data-theme="light"]{
+    --bg:#F5F0E6;
+    --bg-elevated:#FFFFFF;
+    --bg-elevated-2:#ECE4D3;
+    --border:#D8CBB0;
+    --text:#241C14;
+    --text-muted:#6B5F4E;
+    --accent:#B9791F;
+    --accent-soft:#F0DFB8;
+    --correct-bg:#B7E2C9;
+    --correct-text:#113822;
+    --incorrect-bg:#F3C3B9;
+    --incorrect-text:#5A1D12;
+    --focus-ring:#2E6F9E;
+  }
+  html.flash-active{ filter:invert(1); }
+  *,*::before,*::after{box-sizing:border-box;}
+  html,body{height:100%;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:var(--font-ui);
+    -webkit-tap-highlight-color:transparent;
+    overscroll-behavior-y:none;
+  }
+  button, input, select{
+    font-family:inherit;
+    color:inherit;
+  }
+  button{
+    cursor:pointer;
+    border:none;
+    background:none;
+    -webkit-appearance:none;
+    appearance:none;
+  }
+  button:focus-visible, input:focus-visible, select:focus-visible{
+    outline:3px solid var(--focus-ring);
+    outline-offset:2px;
+  }
+  #app{
+    max-width:480px;
+    min-height:100%;
+    margin:0 auto;
+    display:flex;
+    flex-direction:column;
+    background:var(--bg);
+  }
+  /* ---------- header ---------- */
+  #app-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:calc(10px + var(--safe-top)) 16px 10px;
+    border-bottom:1px solid var(--border);
+    position:sticky;
+    top:0;
+    background:var(--bg);
+    z-index:10;
+  }
+  #app-header .brand{
+    display:flex;
+    align-items:center;
+    gap:8px;
+  }
+  #app-header .brand-name{
+    font-weight:700;
+    font-size:14px;
+    letter-spacing:0.03em;
+    color:var(--text-muted);
+  }
+  .pendulum{
+    width:20px;
+    height:24px;
+    position:relative;
+    flex-shrink:0;
+  }
+  .pendulum svg{ width:100%; height:100%; display:block; }
+  .pendulum .arm{
+    transform-origin:10px 22px;
+    animation:swing 2s ease-in-out infinite alternate;
+  }
+  @keyframes swing{
+    from{ transform:rotate(-18deg); }
+    to{ transform:rotate(18deg); }
+  }
+  @media (prefers-reduced-motion: reduce){
+    .pendulum .arm{ animation:none; }
+  }
+  #btn-lang{
+    padding:6px 12px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    font-size:13px;
+    font-weight:600;
+    color:var(--text);
+    background:var(--bg-elevated);
+  }
+  /* ---------- main / screens ---------- */
+  #app-main{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+  }
+  .screen{
+    display:none;
+    flex-direction:column;
+    flex:1;
+    padding:20px 16px calc(20px + var(--safe-bottom));
+    gap:18px;
+    position:relative;
+  }
+  .screen.active{
+    display:flex;
+  }
+  /* ---------- top screen ---------- */
+  #screen-top{
+    justify-content:flex-start;
+    align-items:stretch;
+    padding-top:6vh;
+    gap:0;
+  }
+  .title-block{
+    text-align:center;
+    margin-bottom:4vh;
+  }
+  .title-en{
+    font-family:var(--font-display);
+    font-size:26px;
+    font-weight:700;
+    letter-spacing:0.02em;
+  }
+  .title-ja{
+    margin-top:6px;
+    font-size:15px;
+    color:var(--text-muted);
+    letter-spacing:0.3em;
+  }
+  .top-menu{
+    display:flex;
+    flex-direction:column;
+    gap:0;
+  }
+  .category-block{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    margin-bottom:20px;
+  }
+  .category-title{
+    font-size:13px;
+    font-weight:700;
+    color:var(--text-muted);
+    letter-spacing:0.05em;
+    padding-left:2px;
+  }
+  .submode-selector{
+    display:flex;
+    background:var(--bg-elevated-2);
+    border-radius:999px;
+    padding:3px;
+    gap:2px;
+    margin-bottom:2px;
+  }
+  .submode-selector button{
+    flex:1;
+    padding:9px 4px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+    text-align:center;
+  }
+  .submode-selector button.active{
+    background:var(--accent);
+    color:var(--correct-text);
+  }
+  .menu-btn{
+    display:flex;
+    align-items:center;
+    gap:14px;
+    width:100%;
+    padding:16px 18px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    font-size:16px;
+    font-weight:600;
+    text-align:left;
+  }
+  .menu-btn .menu-icon{
+    font-family:var(--font-display);
+    font-size:18px;
+    color:var(--accent);
+    width:28px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .menu-btn.primary{
+    background:var(--accent-soft);
+    border-color:var(--accent);
+  }
+  .menu-btn.secondary{
+    padding:12px 18px;
+    font-size:14px;
+    font-weight:500;
+    color:var(--text-muted);
+    margin-bottom:10px;
+  }
+  .top-menu .divider{
+    height:1px;
+    background:var(--border);
+    margin:6px 0 16px;
+  }
+  /* ---------- common mode header ---------- */
+  .mode-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .mode-title{
+    font-size:17px;
+    font-weight:700;
+  }
+  .streak-badge{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:6px 12px;
+    background:var(--bg-elevated);
+    border-radius:999px;
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  .streak-badge .streak-value{
+    font-family:var(--font-display);
+    font-weight:700;
+    color:var(--accent);
+    font-size:15px;
+  }
+  [data-submode="challenge60"] .streak-badge{ display:none; }
+  .reroll-row{
+    display:flex;
+    justify-content:center;
+  }
+  .btn-reroll{
+    padding:9px 16px;
+    border:1px solid var(--border);
+    border-radius:999px;
+    font-size:13px;
+    color:var(--text-muted);
+    background:var(--bg-elevated);
+  }
+  [data-submode="survival"] .reroll-row,
+  [data-submode="challenge60"] .reroll-row{ display:none; }
+  .mode-prompt{
+    text-align:center;
+    font-size:14px;
+    font-weight:600;
+    color:var(--text);
+    padding:0 6px;
+  }
+  /* ---------- life display (survival) ---------- */
+  .life-display{
+    display:none;
+    justify-content:center;
+    gap:4px;
+    font-size:22px;
+    min-height:26px;
+  }
+  [data-submode="survival"] .life-display{ display:flex; }
+  .life-fly{
+    position:absolute;
+    left:50%;
+    top:52%;
+    font-size:26px;
+    transform:translate(-50%,-50%) scale(0.4);
+    opacity:0;
+    pointer-events:none;
+    z-index:5;
+  }
+  .life-fly.fly-active{
+    animation:lifeFly 2s ease-out forwards;
+  }
+  @keyframes lifeFly{
+    0%{ transform:translate(-50%,-50%) scale(0.4); opacity:0; }
+    15%{ opacity:1; transform:translate(-50%,-62%) scale(1.1); }
+    40%{ transform:translate(-68%,-120%) scale(1); }
+    60%{ transform:translate(-32%,-175%) scale(0.95); }
+    85%{ transform:translate(-50%,-225%) scale(0.8); opacity:1; }
+    100%{ transform:translate(-50%,-250%) scale(0.5); opacity:0; }
+  }
+  /* ---------- 60s challenge ---------- */
+  .challenge-prestart{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:16px;
+    padding:26px 14px;
+    background:var(--bg-elevated);
+    border-radius:var(--radius-l);
+    border:1px solid var(--border);
+  }
+  [data-uistate="prestart"] .challenge-prestart{ display:flex; }
+  .challenge-prestart-text{
+    text-align:center;
+    font-size:15px;
+    font-weight:600;
+    line-height:1.5;
+  }
+  .btn-challenge-start{
+    padding:14px 34px;
+    border-radius:999px;
+    background:var(--accent);
+    color:var(--correct-text);
+    font-size:16px;
+    font-weight:700;
+  }
+  .challenge-timer{
+    display:none;
+    text-align:center;
+    font-family:var(--font-display);
+    font-size:34px;
+    font-weight:700;
+    color:var(--accent);
+    font-variant-numeric:tabular-nums;
+  }
+  [data-submode="challenge60"][data-uistate="playing"] .challenge-timer{ display:block; }
+  /* ---------- game result panel (survival gameover / challenge timeup) ---------- */
+  .game-result-panel{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:12px;
+    padding:22px 12px;
+    background:var(--bg-elevated);
+    border-radius:var(--radius-l);
+    border:1px solid var(--border);
+  }
+  [data-uistate="gameover"] .game-result-panel,
+  [data-uistate="timeup"] .game-result-panel{ display:flex; }
+  .result-title{ font-size:18px; font-weight:700; }
+  .result-stats{ font-family:var(--font-display); font-size:15px; color:var(--text-muted); }
+  /* ---------- hide groups by uistate ---------- */
+  [data-uistate="prestart"] .play-wrap,
+  [data-uistate="prestart"] .mode-prompt,
+  [data-uistate="prestart"] .choice-grid,
+  [data-uistate="prestart"] .input-row,
+  [data-uistate="gameover"] .play-wrap,
+  [data-uistate="gameover"] .mode-prompt,
+  [data-uistate="gameover"] .choice-grid,
+  [data-uistate="gameover"] .input-row,
+  [data-uistate="gameover"] .reveal-box,
+  [data-uistate="timeup"] .play-wrap,
+  [data-uistate="timeup"] .mode-prompt,
+  [data-uistate="timeup"] .choice-grid,
+  [data-uistate="timeup"] .input-row,
+  [data-uistate="timeup"] .reveal-box{ display:none !important; }
+  [data-submode="challenge60"][data-uistate="playing"] .play-btn,
+  [data-submode="challenge60"][data-uistate="playing"] .play-caption{ display:none; }
+  /* ---------- play button / beat ring ---------- */
+  .play-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+    padding:14px 0 4px;
+  }
+  .play-ring{
+    position:relative;
+    width:118px;
+    height:118px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .play-ring .pulse-ring{
+    position:absolute;
+    inset:0;
+    border-radius:50%;
+    border:2px solid var(--accent);
+    opacity:0;
+  }
+  .play-ring .pulse-ring.beat{
+    animation:pulseBeat 0.42s ease-out;
+  }
+  @keyframes pulseBeat{
+    0%{ transform:scale(0.86); opacity:0.9; }
+    100%{ transform:scale(1.28); opacity:0; }
+  }
+  .play-btn{
+    position:relative;
+    z-index:1;
+    width:96px;
+    height:96px;
+    border-radius:50%;
+    background:var(--accent);
+    color:var(--correct-text);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    font-size:0;
+  }
+  .play-btn svg{ width:34px; height:34px; }
+  .play-caption{
+    font-size:13px;
+    color:var(--text-muted);
+  }
+  /* ---------- choice grid (mode 1) ---------- */
+  .choice-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:12px;
+  }
+  .choice-btn{
+    padding:22px 8px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    text-align:center;
+  }
+  .choice-btn .num{
+    font-family:var(--font-display);
+    font-size:30px;
+    font-weight:700;
+    font-variant-numeric:tabular-nums;
+  }
+  .choice-btn .unit{
+    display:block;
+    margin-top:2px;
+    font-size:11px;
+    color:var(--text-muted);
+  }
+  .choice-btn.is-correct{
+    background:var(--correct-bg);
+    border-color:var(--correct-bg);
+  }
+  .choice-btn.is-correct .num, .choice-btn.is-correct .unit{ color:var(--correct-text); }
+  .choice-btn.is-incorrect{
+    background:var(--incorrect-bg);
+    border-color:var(--incorrect-bg);
+  }
+  .choice-btn.is-incorrect .num, .choice-btn.is-incorrect .unit{ color:var(--incorrect-text); }
+  .choice-btn:disabled{ opacity:1; }
+  /* ---------- input mode ---------- */
+  .input-row{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+  }
+  #input-tempo{
+    width:160px;
+    padding:14px 10px;
+    text-align:center;
+    font-family:var(--font-display);
+    font-size:34px;
+    font-weight:700;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+  }
+  #input-tempo::-webkit-outer-spin-button,
+  #input-tempo::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .btn-answer{
+    width:100%;
+    padding:16px;
+    border-radius:var(--radius-m);
+    font-size:16px;
+    font-weight:700;
+    background:var(--accent);
+    color:var(--correct-text);
+  }
+  .btn-answer:disabled{
+    background:var(--bg-elevated-2);
+    color:var(--text-muted);
+  }
+  .btn-answer.is-correct{ background:var(--correct-bg); color:var(--correct-text); }
+  .btn-answer.is-incorrect{ background:var(--incorrect-bg); color:var(--incorrect-text); }
+  /* ---------- reveal area ---------- */
+  .reveal-box{
+    display:none;
+    flex-direction:column;
+    align-items:center;
+    gap:14px;
+    padding:18px 10px;
+    background:var(--bg-elevated);
+    border-radius:var(--radius-l);
+    border:1px solid var(--border);
+  }
+  .reveal-box.show{ display:flex; }
+  .reveal-label{
+    font-size:14px;
+    color:var(--text-muted);
+  }
+  .reveal-value{
+    font-family:var(--font-display);
+    font-size:38px;
+    font-weight:700;
+    color:var(--accent);
+  }
+  .reveal-actions{
+    display:flex;
+    gap:10px;
+    width:100%;
+  }
+  .reveal-actions button{
+    flex:1;
+    padding:13px 6px;
+    border-radius:var(--radius-m);
+    font-size:14px;
+    font-weight:600;
+  }
+  .btn-next{
+    background:var(--accent);
+    color:var(--correct-text);
+  }
+  .btn-top-inline{
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+  }
+  /* ---------- tap-based modes (mode3 自力タップ / mode4 テンポキープ) ---------- */
+  .target-display{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:14px 0 2px;
+  }
+  .target-display .reveal-label{ font-size:13px; }
+  .target-display .big-num{
+    font-family:var(--font-display);
+    font-size:44px;
+    font-weight:700;
+    color:var(--accent);
+  }
+  .measures-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:10px;
+  }
+  .measures-row .row-label{ font-size:14px; font-weight:600; }
+  .measures-row input{
+    width:70px;
+    padding:8px 6px;
+    text-align:center;
+    font-family:var(--font-display);
+    font-size:18px;
+    font-weight:700;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-s);
+  }
+  .tap-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
+  .btn-tap-action{
+    width:100%;
+    padding:26px 10px;
+    border-radius:var(--radius-l);
+    background:var(--bg-elevated);
+    border:2px solid var(--accent);
+    font-size:18px;
+    font-weight:700;
+    transition:transform 0.08s ease;
+  }
+  .btn-tap-action:disabled{ opacity:0.45; }
+  .btn-tap-action.tapped{
+    transform:scale(0.96);
+    background:var(--accent-soft);
+  }
+  .tap-progress{
+    font-family:var(--font-display);
+    font-size:14px;
+    color:var(--text-muted);
+  }
+  .tap-progress .cur{ color:var(--accent); font-weight:700; }
+  .tap-result{
+    display:none;
+    flex-direction:column;
+    gap:14px;
+  }
+  .tap-result.show{ display:flex; }
+  .tap-summary{
+    display:flex;
+    justify-content:space-around;
+    padding:14px 8px;
+    background:var(--bg-elevated);
+    border-radius:var(--radius-m);
+    border:1px solid var(--border);
+  }
+  .tap-summary .stat{
+    text-align:center;
+  }
+  .tap-summary .stat .lbl{
+    font-size:12px;
+    color:var(--text-muted);
+    display:block;
+    margin-bottom:4px;
+  }
+  .tap-summary .stat .val{
+    font-family:var(--font-display);
+    font-size:20px;
+    font-weight:700;
+  }
+  .graph-box{
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    padding:10px 6px;
+  }
+  .tempo-graph{ width:100%; height:auto; display:block; }
+  .graph-grid{ stroke:var(--border); stroke-width:1; }
+  .graph-target-line{ stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; }
+  .graph-target-label{ fill:var(--accent); font-size:9px; font-family:var(--font-display); }
+  .graph-line{ stroke:var(--text); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
+  .graph-point{ fill:var(--text); }
+  .graph-point-label{ fill:var(--text); font-size:9px; font-weight:700; font-family:var(--font-display); }
+  .graph-axis-label{ fill:var(--text-muted); font-size:8px; font-family:var(--font-display); }
+  .tap-result-actions{
+    display:flex;
+    flex-wrap:wrap;
+    gap:10px;
+  }
+  .tap-result-actions button{
+    flex:1 1 30%;
+    padding:12px 4px;
+    border-radius:var(--radius-m);
+    font-size:13px;
+    font-weight:600;
+  }
+  .btn-retry{ background:var(--bg-elevated-2); border:1px solid var(--border); }
+  /* ---------- footer nav ---------- */
+  .mode-footer{
+    margin-top:auto;
+    padding-top:10px;
+  }
+  .btn-back-top{
+    width:100%;
+    padding:13px;
+    border-radius:var(--radius-m);
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    color:var(--text-muted);
+    font-size:14px;
+    font-weight:600;
+  }
+  /* ---------- history ---------- */
+  .filter-row{
+    display:flex;
+    gap:8px;
+    overflow-x:auto;
+    padding-bottom:2px;
+  }
+  .filter-btn{
+    flex-shrink:0;
+    padding:8px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    font-size:13px;
+    color:var(--text-muted);
+    font-weight:600;
+  }
+  .filter-btn.active{
+    background:var(--accent);
+    color:var(--correct-text);
+    border-color:var(--accent);
+  }
+  .history-list{
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    overflow-y:auto;
+  }
+  .history-empty{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:14px;
+    padding:40px 10px;
+  }
+  .history-row{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:12px 14px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+  }
+  .history-row .result-mark{
+    font-size:20px;
+    font-weight:700;
+    width:26px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .history-row .result-mark.correct{ color:var(--correct-bg); }
+  .history-row .result-mark.incorrect{ color:var(--incorrect-bg); }
+  .history-row .result-mark.tap-icon{ color:var(--accent); font-size:16px; }
+  .history-row .row-main{
+    flex:1;
+    min-width:0;
+  }
+  .history-row .row-mode{
+    font-size:12px;
+    color:var(--text-muted);
+  }
+  .history-row .row-date{
+    font-size:11px;
+    color:var(--text-muted);
+    opacity:0.8;
+  }
+  .history-row .row-values{
+    font-family:var(--font-display);
+    font-size:15px;
+    font-weight:600;
+    margin-top:2px;
+  }
+  .history-row .row-values .wrong-val{
+    color:var(--incorrect-bg);
+    font-weight:500;
+    margin-left:6px;
+  }
+  .history-row .row-values .avg-inline{
+    color:var(--text-muted);
+    font-weight:500;
+    margin-left:6px;
+  }
+  .count-correct{ color:var(--correct-bg); font-family:var(--font-display); font-weight:700; }
+  .count-incorrect{ color:var(--incorrect-bg); font-family:var(--font-display); font-weight:700; margin-left:8px; }
+  .btn-detail{
+    flex-shrink:0;
+    padding:8px 12px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    font-size:12px;
+    color:var(--accent);
+  }
+  .detail-log-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    max-height:50vh;
+    overflow-y:auto;
+  }
+  .detail-log-row{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:8px 10px;
+    background:var(--bg-elevated-2);
+    border-radius:var(--radius-s);
+    font-size:13px;
+  }
+  .detail-log-row .log-mark{
+    font-weight:700;
+    width:20px;
+    text-align:center;
+    flex-shrink:0;
+  }
+  .detail-log-row .log-mark.correct{ color:var(--correct-bg); }
+  .detail-log-row .log-mark.incorrect{ color:var(--incorrect-bg); }
+  .detail-log-row .log-values{
+    font-family:var(--font-display);
+    font-weight:600;
+    flex:1;
+  }
+  .detail-log-row .log-extra{
+    font-size:11px;
+    color:var(--text-muted);
+    flex-shrink:0;
+  }
+  .detail-log-row.lifegain-row{
+    background:var(--accent-soft);
+    justify-content:flex-start;
+  }
+  .detail-log-row.lifegain-row .log-mark{ color:var(--accent); width:auto; }
+  /* ---------- settings ---------- */
+  .settings-group{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+  }
+  .settings-group-title{
+    font-size:13px;
+    color:var(--text-muted);
+    font-weight:600;
+  }
+  .settings-card{
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    padding:14px;
+  }
+  .settings-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    padding:10px 0;
+  }
+  .settings-row + .settings-row{
+    border-top:1px solid var(--border);
+  }
+  .settings-row .row-label{
+    font-size:14px;
+    font-weight:600;
+  }
+  .settings-row .row-desc{
+    font-size:12px;
+    color:var(--text-muted);
+    margin-top:2px;
+  }
+  .seg-control{
+    display:flex;
+    background:var(--bg-elevated-2);
+    border-radius:999px;
+    padding:3px;
+    gap:2px;
+  }
+  .seg-control button{
+    padding:6px 12px;
+    border-radius:999px;
+    font-size:12px;
+    font-weight:600;
+    color:var(--text-muted);
+  }
+  .seg-control button.active{
+    background:var(--accent);
+    color:var(--correct-text);
+  }
+  #range-volume{
+    width:100%;
+    accent-color:var(--accent);
+  }
+  .btn-test-play{
+    padding:8px 16px;
+    border-radius:999px;
+    border:1px solid var(--accent);
+    color:var(--accent);
+    background:transparent;
+    font-size:13px;
+    font-weight:600;
+    min-width:76px;
+  }
+  .btn-test-play.is-playing{
+    background:var(--accent);
+    color:var(--correct-text);
+  }
+  .settings-checkbox{
+    width:22px;
+    height:22px;
+    accent-color:var(--accent);
+    flex-shrink:0;
+  }
+  .btn-danger{
+    width:100%;
+    padding:13px;
+    border-radius:var(--radius-m);
+    border:1px solid var(--incorrect-bg);
+    color:var(--incorrect-bg);
+    background:transparent;
+    font-size:14px;
+    font-weight:600;
+  }
+  .settings-note{
+    font-size:12px;
+    color:var(--text-muted);
+    line-height:1.6;
+    padding:0 2px;
+  }
+  .version-tag{
+    text-align:center;
+    font-size:11px;
+    color:var(--text-muted);
+    opacity:0.7;
+    padding-top:4px;
+  }
+  /* ---------- modal ---------- */
+  #modal-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:100;
+  }
+  #modal-backdrop.show{ display:flex; }
+  #modal-box{
+    width:100%;
+    max-width:420px;
+    max-height:85vh;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-l);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow-y:auto;
+  }
+  #modal-box .modal-head{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  #modal-box .modal-title{ font-size:15px; font-weight:700; }
+  #btn-modal-close{
+    width:30px;
+    height:30px;
+    border-radius:50%;
+    background:var(--bg-elevated-2);
+    font-size:15px;
+    color:var(--text-muted);
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header id="app-header">
+    <div class="brand">
+      <div class="pendulum" aria-hidden="true">
+        <svg viewBox="0 0 20 24">
+          <line x1="2" y1="22" x2="18" y2="22" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
+          <g class="arm">
+            <line x1="10" y1="22" x2="10" y2="4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+            <circle cx="10" cy="4" r="3" fill="var(--accent)"/>
+          </g>
+        </svg>
+      </div>
+      <span class="brand-name">NamaTemPoTrainer</span>
+    </div>
+    <button id="btn-lang" type="button"></button>
+  </header>
+
+  <main id="app-main">
+
+    <!-- ============ TOP ============ -->
+    <section id="screen-top" class="screen active">
+      <div class="title-block">
+        <div class="title-en">NamaTemPoTrainer</div>
+        <div class="title-ja">ナマポ</div>
+      </div>
+      <div class="top-menu">
+
+        <div class="category-block">
+          <div class="category-title" data-i18n="categoryListening"></div>
+          <div class="submode-selector" data-submode-selector>
+            <button type="button" class="active" data-submode-value="unlimited" data-i18n="submodeUnlimitedLabel"></button>
+            <button type="button" data-submode-value="survival" data-i18n="submodeSurvivalLabel"></button>
+            <button type="button" data-submode-value="challenge60" data-i18n="submodeChallenge60Label"></button>
+          </div>
+          <button class="menu-btn primary" data-nav="mode1" type="button">
+            <span class="menu-icon">♩</span>
+            <span data-i18n="menuModeSelect"></span>
+          </button>
+          <button class="menu-btn primary" data-nav="mode2" type="button">
+            <span class="menu-icon">#</span>
+            <span data-i18n="menuModeInput"></span>
+          </button>
+        </div>
+
+        <div class="category-block">
+          <div class="category-title" data-i18n="categoryTap"></div>
+          <button class="menu-btn primary" data-nav="mode3" type="button">
+            <span class="menu-icon">⁘</span>
+            <span data-i18n="menuModeTap"></span>
+          </button>
+          <button class="menu-btn primary" data-nav="mode4" type="button">
+            <span class="menu-icon">◎</span>
+            <span data-i18n="menuModeTempoKeep"></span>
+          </button>
+        </div>
+
+        <div class="divider"></div>
+        <button class="menu-btn secondary" data-nav="history" type="button">
+          <span class="menu-icon">≣</span>
+          <span data-i18n="menuHistory"></span>
+        </button>
+        <button class="menu-btn secondary" data-nav="settings" type="button">
+          <span class="menu-icon">⚙</span>
+          <span data-i18n="menuSettings"></span>
+        </button>
+      </div>
+    </section>
+
+    <!-- ============ MODE 1 : SELECT ============ -->
+    <section id="screen-mode1" class="screen" data-mode="select" data-submode="unlimited" data-uistate="ready">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuModeSelect"></div>
+        <div class="streak-badge">
+          <span data-i18n="streakLabel"></span>
+          <span class="streak-value" data-streak-value>0</span>
+        </div>
+      </div>
+      <div class="life-display" data-life-display></div>
+      <div class="challenge-prestart" data-challenge-prestart>
+        <div class="challenge-prestart-text" data-i18n="challengeIntro"></div>
+        <button class="btn-challenge-start" data-action="start-challenge" type="button" data-i18n="btnChallengeStart"></button>
+      </div>
+      <div class="challenge-timer" data-challenge-timer>60.000</div>
+      <div class="reroll-row">
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+      </div>
+      <div class="play-wrap">
+        <div class="play-ring">
+          <div class="pulse-ring" data-pulse></div>
+          <button id="btn-play" class="play-btn" data-action="play" type="button" aria-label="play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>
+          </button>
+        </div>
+        <div class="play-caption" data-i18n="playCaption"></div>
+      </div>
+      <div class="mode-prompt" data-i18n="promptSelect"></div>
+      <div class="choice-grid" data-choice-grid></div>
+      <div class="reveal-box" data-reveal>
+        <div class="reveal-label" data-i18n="correctIs"></div>
+        <div class="reveal-value"><span data-reveal-value>--</span></div>
+        <div class="reveal-actions">
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
+        </div>
+      </div>
+      <div class="game-result-panel" data-result-panel>
+        <div class="result-title" data-result-title></div>
+        <div class="result-stats" data-result-stats></div>
+        <div class="reveal-actions">
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="retry-session" type="button" data-i18n="btnRetrySession"></button>
+        </div>
+      </div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
+    <!-- ============ MODE 2 : INPUT ============ -->
+    <section id="screen-mode2" class="screen" data-mode="input" data-submode="unlimited" data-uistate="ready">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuModeInput"></div>
+        <div class="streak-badge">
+          <span data-i18n="streakLabel"></span>
+          <span class="streak-value" data-streak-value>0</span>
+        </div>
+      </div>
+      <div class="life-display" data-life-display></div>
+      <div class="challenge-prestart" data-challenge-prestart>
+        <div class="challenge-prestart-text" data-i18n="challengeIntro"></div>
+        <button class="btn-challenge-start" data-action="start-challenge" type="button" data-i18n="btnChallengeStart"></button>
+      </div>
+      <div class="challenge-timer" data-challenge-timer>60.000</div>
+      <div class="reroll-row">
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+      </div>
+      <div class="play-wrap">
+        <div class="play-ring">
+          <div class="pulse-ring" data-pulse></div>
+          <button class="play-btn" data-action="play" type="button" aria-label="play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>
+          </button>
+        </div>
+        <div class="play-caption" data-i18n="playCaption"></div>
+      </div>
+      <div class="mode-prompt" data-i18n="promptInput"></div>
+      <div class="input-row">
+        <input id="input-tempo" type="number" inputmode="numeric" min="1" max="400" placeholder="—">
+        <button class="btn-answer" data-action="answer" type="button" disabled data-i18n="btnAnswer"></button>
+      </div>
+      <div class="reveal-box" data-reveal>
+        <div class="reveal-label" data-i18n="correctIs"></div>
+        <div class="reveal-value"><span data-reveal-value>--</span></div>
+        <div class="reveal-actions">
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
+        </div>
+      </div>
+      <div class="game-result-panel" data-result-panel>
+        <div class="result-title" data-result-title></div>
+        <div class="result-stats" data-result-stats></div>
+        <div class="reveal-actions">
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="retry-session" type="button" data-i18n="btnRetrySession"></button>
+        </div>
+      </div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
+    <!-- ============ MODE 3 : 自力タップ ============ -->
+    <section id="screen-mode3" class="screen" data-mode="tap">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuModeTap"></div>
+      </div>
+      <div class="reroll-row">
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+      </div>
+      <div class="target-display">
+        <div class="reveal-label" data-i18n="targetTempoLabel"></div>
+        <div class="big-num"><span data-target-value>--</span></div>
+      </div>
+      <div class="mode-prompt" data-i18n="promptTap"></div>
+      <div class="tap-wrap">
+        <button id="btn-tap" class="btn-tap-action" data-action="tap" type="button" data-i18n="btnTap8"></button>
+        <div class="tap-progress"><span class="cur" data-tap-count>0</span> / 8</div>
+      </div>
+      <div class="tap-result" data-tap-result>
+        <div class="tap-summary">
+          <div class="stat">
+            <span class="lbl" data-i18n="avgTempoLabel"></span>
+            <span class="val" data-avg-tempo>--</span>
+          </div>
+          <div class="stat">
+            <span class="lbl" data-i18n="targetTempoLabel"></span>
+            <span class="val" data-target-value-2>--</span>
+          </div>
+        </div>
+        <div class="graph-box" data-graph-container></div>
+        <div class="tap-result-actions">
+          <button class="btn-retry" data-action="retry-tap" type="button" data-i18n="btnRetryTap"></button>
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
+        </div>
+      </div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
+    <!-- ============ MODE 4 : テンポキープ ============ -->
+    <section id="screen-mode4" class="screen" data-mode="tempokeep">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuModeTempoKeep"></div>
+      </div>
+      <div class="reroll-row">
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+      </div>
+      <div class="target-display">
+        <div class="reveal-label" data-i18n="targetTempoLabel"></div>
+        <div class="big-num"><span data-tk-target-main>--</span></div>
+      </div>
+      <div class="mode-prompt" data-i18n="promptTempoKeep"></div>
+      <div class="measures-row">
+        <label class="row-label" data-i18n="measuresLabel" for="input-measures"></label>
+        <input id="input-measures" type="number" inputmode="numeric" min="1" max="16" value="2">
+      </div>
+      <div class="play-wrap">
+        <div class="play-ring">
+          <div class="pulse-ring" data-pulse></div>
+          <button id="btn-tempokeep-play" class="play-btn" data-action="tempokeep-play" type="button" aria-label="play">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>
+          </button>
+        </div>
+        <div class="play-caption" data-i18n="tempoKeepPlayCaption"></div>
+      </div>
+      <div class="tap-wrap">
+        <button id="btn-tempokeep-tap" class="btn-tap-action" data-action="tempokeep-tap" type="button" disabled data-i18n="btnTapKeep"></button>
+        <div class="tap-progress"><span data-tempokeep-progress>0 / 8</span></div>
+      </div>
+      <div class="tap-result" data-tempokeep-result>
+        <div class="tap-summary">
+          <div class="stat">
+            <span class="lbl" data-i18n="avgTempoLabel"></span>
+            <span class="val" data-tk-avg-tempo>--</span>
+          </div>
+          <div class="stat">
+            <span class="lbl" data-i18n="targetTempoLabel"></span>
+            <span class="val" data-tk-target-value>--</span>
+          </div>
+        </div>
+        <div class="graph-box" data-tk-graph-container></div>
+        <div class="tap-result-actions">
+          <button class="btn-retry" data-action="retry-tempokeep" type="button" data-i18n="btnRetryTap"></button>
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
+        </div>
+      </div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
+    <!-- ============ HISTORY ============ -->
+    <section id="screen-history" class="screen" data-mode="history">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuHistory"></div>
+      </div>
+      <div class="filter-row" data-history-filters>
+        <button class="filter-btn active" data-filter="all" type="button" data-i18n="filterAll"></button>
+        <button class="filter-btn" data-filter="select" type="button" data-i18n="menuModeSelect"></button>
+        <button class="filter-btn" data-filter="input" type="button" data-i18n="menuModeInput"></button>
+        <button class="filter-btn" data-filter="tap" type="button" data-i18n="menuModeTap"></button>
+        <button class="filter-btn" data-filter="tempokeep" type="button" data-i18n="menuModeTempoKeep"></button>
+      </div>
+      <div class="history-list" data-history-list></div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
+    <!-- ============ SETTINGS ============ -->
+    <section id="screen-settings" class="screen" data-mode="settings">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuSettings"></div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsSoundGroup"></div>
+        <div class="settings-card">
+          <div class="settings-row">
+            <div class="row-label" data-i18n="settingsVolume"></div>
+            <button id="btn-test-play" class="btn-test-play" data-action="test-play" type="button"></button>
+          </div>
+          <input id="range-volume" type="range" min="0" max="1" step="0.05" value="0.8">
+          <div class="settings-row" style="border-top:none;padding-top:4px;">
+            <div class="row-label" data-i18n="settingsClickSound"></div>
+            <div class="seg-control" data-seg="clickSound">
+              <button data-value="click" type="button" data-i18n="soundClick"></button>
+              <button data-value="wood" type="button" data-i18n="soundWood"></button>
+              <button data-value="beep" type="button" data-i18n="soundBeep"></button>
+            </div>
+          </div>
+          <div class="settings-row">
+            <div class="row-label" data-i18n="settingsFlash"></div>
+            <input type="checkbox" class="settings-checkbox" data-setting-checkbox="flash">
+          </div>
+          <div class="settings-row">
+            <div class="row-label" data-i18n="settingsVibrate"></div>
+            <input type="checkbox" class="settings-checkbox" data-setting-checkbox="vibrate">
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsDisplayGroup"></div>
+        <div class="settings-card">
+          <div class="settings-row" style="border-top:none;">
+            <div class="row-label" data-i18n="settingsTheme"></div>
+            <div class="seg-control" data-seg="theme">
+              <button data-value="dark" type="button" data-i18n="themeDark"></button>
+              <button data-value="light" type="button" data-i18n="themeLight"></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsDifficultyGroup"></div>
+        <div class="settings-card">
+          <div class="settings-row" style="border-top:none;">
+            <div>
+              <div class="row-label" data-i18n="settingsDifficulty"></div>
+              <div class="row-desc" data-i18n="settingsDifficultyDesc"></div>
+            </div>
+          </div>
+          <div class="seg-control" data-seg="difficulty" style="margin-top:4px;">
+            <button data-value="easy" type="button" data-i18n="difficultyEasy"></button>
+            <button data-value="normal" type="button" data-i18n="difficultyNormal"></button>
+            <button data-value="hard" type="button" data-i18n="difficultyHard"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsDataGroup"></div>
+        <div class="settings-card">
+          <button class="btn-danger" data-action="clear-history" type="button" data-i18n="settingsClearHistory"></button>
+          <div class="settings-note" data-i18n="settingsHistoryNote" style="margin-top:10px;"></div>
+        </div>
+      </div>
+
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+        <div class="version-tag">NamaTemPoTrainer v2.0</div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div id="modal-backdrop">
+  <div id="modal-box" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title" data-i18n="modalDetailTitle"></div>
+      <button id="btn-modal-close" type="button" aria-label="close">✕</button>
+    </div>
+    <div class="tap-summary" data-modal-summary></div>
+    <div class="graph-box" data-modal-graph></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+
+/* ==================================================================
+   定数
+   ================================================================== */
+var TEMPO_LIST = [40,46,52,56,60,66,72,80,88,96,104,112,120,126,132,138,144,152,160,168,176,184,208];
+
+var DIFFICULTY_WINDOW = { easy: 6, normal: 3, hard: 1 };
+
+var I18N = {
+  ja: {
+    menuModeSelect: '選択モード',
+    menuModeInput: '入力モード',
+    menuModeTap: '自力タップ',
+    menuModeTempoKeep: 'テンポキープ',
+    menuHistory: '履歴',
+    menuSettings: '設定',
+    categoryListening: '聴き取りトレーニング',
+    categoryTap: 'タップでトレーニング',
+    submodeUnlimitedLabel: '無制限',
+    submodeSurvivalLabel: '生き残り',
+    submodeChallenge60Label: '60秒チャレンジ',
+    streakLabel: '連続正解',
+    btnReroll: 'お題を変える',
+    playCaption: 'タップして8拍再生',
+    btnAnswer: '回答',
+    correctIs: '正解は',
+    btnNext: '次のお題',
+    btnBackTop: 'トップに戻る',
+    btnRetrySession: 'もう一度',
+    targetTempoLabel: 'お題テンポ',
+    btnTap8: '8回タップ！',
+    btnTapKeep: 'タップ',
+    avgTempoLabel: '平均テンポ',
+    btnRetryTap: 'もう一度タップ',
+    measuresLabel: '小節数',
+    tempoKeepPlayCaption: 'タップで4拍のお手本を再生',
+    promptTempoKeep: '再生ボタンで4拍のお手本を聞いたら、無音になってもそのままタップし続けてテンポをキープしましょう',
+    challengeIntro: '60秒以内の正答数にチャレンジ！',
+    btnChallengeStart: 'スタート',
+    resultGameOver: 'ゲームオーバー',
+    resultTimeUp: 'タイムアップ',
+    resultCorrectCount: '正答',
+    resultIncorrectCount: '誤答',
+    lifeCountLabel: '残りライフ',
+    remainingLabel: '残り',
+    secondsUnit: '秒',
+    filterAll: 'すべて',
+    settingsSoundGroup: 'サウンド',
+    settingsVolume: 'クリック音量',
+    settingsClickSound: '音の種類',
+    soundClick: 'クリック',
+    soundWood: 'ウッド',
+    soundBeep: 'ビープ',
+    settingsFlash: 'フラッシュ',
+    settingsVibrate: 'バイブ',
+    settingsDisplayGroup: '表示',
+    settingsTheme: 'テーマ',
+    themeDark: 'ダーク',
+    themeLight: 'ライト',
+    settingsDifficultyGroup: '難易度',
+    settingsDifficulty: '選択肢の近さ',
+    settingsDifficultyDesc: '選択モードの選択肢がお題にどれだけ近いかを調整します',
+    difficultyEasy: 'やさしい',
+    difficultyNormal: 'ふつう',
+    difficultyHard: 'むずかしい',
+    settingsDataGroup: 'データ',
+    settingsClearHistory: '履歴をすべて消去',
+    settingsHistoryNote: '履歴はこの端末のブラウザに保存され、次回開いたときも引き継がれます。(Claude.aiのプレビュー画面内では保存されない場合があります)',
+    btnTestPlay: '試聴',
+    btnTestStop: '停止',
+    promptSelect: '音を聞いて、近いテンポを選んでください',
+    promptInput: 'このテンポはいくつ？(数値で入力してください)',
+    promptTap: '表示されているテンポに合わせて、8回タップしてください',
+    modalDetailTitle: '詳細',
+    historyEmpty: 'まだ履歴がありません',
+    modeLabelSelect: '選択モード',
+    modeLabelInput: '入力モード',
+    modeLabelTap: '自力タップ',
+    modeLabelTempoKeep: 'テンポキープ',
+    detailBtn: '詳細',
+    confirmClearHistory: '履歴をすべて消去します。よろしいですか？'
+  },
+  en: {
+    menuModeSelect: 'Selection Mode',
+    menuModeInput: 'Input Mode',
+    menuModeTap: 'Self-Paced Tap',
+    menuModeTempoKeep: 'Tempo Keep',
+    menuHistory: 'History',
+    menuSettings: 'Settings',
+    categoryListening: 'Listening Training',
+    categoryTap: 'Tap Training',
+    submodeUnlimitedLabel: 'Unlimited',
+    submodeSurvivalLabel: 'Survival',
+    submodeChallenge60Label: '60s Challenge',
+    streakLabel: 'Streak',
+    btnReroll: 'Change tempo',
+    playCaption: 'Tap to play 8 beats',
+    btnAnswer: 'Answer',
+    correctIs: 'Correct answer',
+    btnNext: 'Next',
+    btnBackTop: 'Back to top',
+    btnRetrySession: 'Try again',
+    targetTempoLabel: 'Target tempo',
+    btnTap8: 'Tap 8 times!',
+    btnTapKeep: 'Tap',
+    avgTempoLabel: 'Average tempo',
+    btnRetryTap: 'Retry',
+    measuresLabel: 'Measures',
+    tempoKeepPlayCaption: 'Tap to play a 4-beat example',
+    promptTempoKeep: 'Play the 4-beat example, then keep tapping the same tempo once it goes silent',
+    challengeIntro: 'Challenge: how many can you get right in 60 seconds?',
+    btnChallengeStart: 'Start',
+    resultGameOver: 'Game Over',
+    resultTimeUp: "Time's Up",
+    resultCorrectCount: 'Correct',
+    resultIncorrectCount: 'Wrong',
+    lifeCountLabel: 'Lives left',
+    remainingLabel: 'Remaining',
+    secondsUnit: 's',
+    filterAll: 'All',
+    settingsSoundGroup: 'Sound',
+    settingsVolume: 'Click volume',
+    settingsClickSound: 'Click sound',
+    soundClick: 'Click',
+    soundWood: 'Wood',
+    soundBeep: 'Beep',
+    settingsFlash: 'Flash',
+    settingsVibrate: 'Vibrate',
+    settingsDisplayGroup: 'Display',
+    settingsTheme: 'Theme',
+    themeDark: 'Dark',
+    themeLight: 'Light',
+    settingsDifficultyGroup: 'Difficulty',
+    settingsDifficulty: 'Choice closeness',
+    settingsDifficultyDesc: 'Adjusts how close the wrong choices are to the target in Selection Mode',
+    difficultyEasy: 'Easy',
+    difficultyNormal: 'Normal',
+    difficultyHard: 'Hard',
+    settingsDataGroup: 'Data',
+    settingsClearHistory: 'Clear all history',
+    settingsHistoryNote: 'History is saved in this browser and carries over next time you open the app. (It may not persist inside the Claude.ai preview.)',
+    btnTestPlay: 'Play',
+    btnTestStop: 'Stop',
+    promptSelect: 'Listen, then pick the tempo that matches',
+    promptInput: 'What tempo is this? (enter a number)',
+    promptTap: 'Tap 8 times to match the tempo shown above',
+    modalDetailTitle: 'Detail',
+    historyEmpty: 'No history yet',
+    modeLabelSelect: 'Selection',
+    modeLabelInput: 'Input',
+    modeLabelTap: 'Self-Paced Tap',
+    modeLabelTempoKeep: 'Tempo Keep',
+    detailBtn: 'Detail',
+    confirmClearHistory: 'This will clear all history. Continue?'
+  }
+};
+
+/* ==================================================================
+   状態
+   ================================================================== */
+var state = {
+  lang: 'ja',
+  screen: 'top',
+  listenSubMode: 'unlimited',
+  settings: {
+    clickVolume: 0.8,
+    clickSound: 'click',
+    theme: 'dark',
+    difficulty: 'normal',
+    flash: false,
+    vibrate: false
+  },
+  history: [],
+  audioCtx: null,
+  activeAudioNodes: [],
+  testPlaying: false,
+  testPlayTimeoutId: null
+};
+
+/* モードごとの進行中データ */
+var roundState = {
+  select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
+  input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
+  tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
+  tempokeep: { tempo: null, measures: 2, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 }
+};
+
+/* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
+var currentSession = null;
+
+/* 60秒チャレンジのタイマー管理 */
+var challenge60 = { active: false, endTime: 0, tickIntervalId: null };
+
+/* 連続再生スケジューラ(60秒チャレンジ用) */
+var continuousPlayback = { active: false, ctxTime: 0, interval: 0, batchTimeoutId: null, pulseEl: null };
+
+/* ==================================================================
+   永続化 (localStorage)
+   ※ Claude.aiのプレビュー画面内ではlocalStorageが使えない場合があるため、
+     読み書きは必ずtry/catchで保護し、失敗時はメモリ上のみで動作を続ける。
+   ================================================================== */
+var STORAGE_KEY_HISTORY = 'namatempotrainer_history_v1';
+var STORAGE_KEY_SETTINGS = 'namatempotrainer_settings_v1';
+
+function saveHistoryToStorage(){
+  try {
+    localStorage.setItem(STORAGE_KEY_HISTORY, JSON.stringify(state.history));
+  } catch (e){ /* ストレージ不可の環境では何もしない */ }
+}
+
+/* 旧バージョン(v1.1)の選択/入力モード履歴(1問=1件)を、新しいセッション集計形式に変換する */
+function migrateHistoryEntry(entry){
+  if ((entry.type === 'select' || entry.type === 'input') && entry.details === undefined){
+    return {
+      id: entry.id,
+      type: entry.type,
+      subMode: 'unlimited',
+      timestamp: entry.timestamp,
+      correctCount: entry.correct ? 1 : 0,
+      incorrectCount: entry.correct ? 0 : 1,
+      details: [{ correct: entry.correct, targetTempo: entry.targetTempo, userTempo: entry.userTempo, timestamp: entry.timestamp }]
+    };
+  }
+  return entry;
+}
+
+function loadHistoryFromStorage(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_HISTORY);
+    if (raw){
+      var parsed = JSON.parse(raw);
+      state.history = parsed.map(migrateHistoryEntry);
+      saveHistoryToStorage();
+    }
+  } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
+}
+
+function saveSettingsToStorage(){
+  try {
+    localStorage.setItem(STORAGE_KEY_SETTINGS, JSON.stringify(state.settings));
+  } catch (e){ /* ストレージ不可の環境では何もしない */ }
+}
+
+function loadSettingsFromStorage(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_SETTINGS);
+    if (raw){
+      var loaded = JSON.parse(raw);
+      for (var key in loaded){
+        if (Object.prototype.hasOwnProperty.call(state.settings, key)){
+          state.settings[key] = loaded[key];
+        }
+      }
+    }
+  } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
+}
+
+/* ==================================================================
+   ユーティリティ
+   ================================================================== */
+function t(key){
+  var dict = I18N[state.lang];
+  return (dict && dict[key] !== undefined) ? dict[key] : key;
+}
+
+function pickRandomTempo(exclude){
+  var candidates = TEMPO_LIST;
+  if (exclude !== undefined && exclude !== null){
+    candidates = TEMPO_LIST.filter(function(v){ return v !== exclude; });
+  }
+  var idx = Math.floor(Math.random() * candidates.length);
+  return candidates[idx];
+}
+
+function shuffleArray(arr){
+  for (var i = arr.length - 1; i > 0; i--){
+    var j = Math.floor(Math.random() * (i + 1));
+    var tmp = arr[i]; arr[i] = arr[j]; arr[j] = tmp;
+  }
+  return arr;
+}
+
+function formatTempo(n){
+  return '\u2669 = ' + n;
+}
+
+function formatDateTime(ms){
+  var d = new Date(ms);
+  var locale = state.lang === 'ja' ? 'ja-JP' : 'en-US';
+  return d.toLocaleString(locale, { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' });
+}
+
+function qs(root, sel){ return root.querySelector(sel); }
+function qsa(root, sel){ return Array.prototype.slice.call(root.querySelectorAll(sel)); }
+
+function modeScreenId(type){ return type === 'select' ? 'mode1' : 'mode2'; }
+
+/* ==================================================================
+   i18n 適用
+   ================================================================== */
+function applyI18n(){
+  qsa(document, '[data-i18n]').forEach(function(el){
+    var key = el.getAttribute('data-i18n');
+    el.textContent = t(key);
+  });
+  document.documentElement.lang = state.lang;
+  var langBtn = document.getElementById('btn-lang');
+  langBtn.textContent = state.lang === 'ja' ? 'EN' : '日本語';
+  renderTestPlayButton(document.getElementById('btn-test-play'));
+}
+
+/* 画面ごとの動的表示を言語切替後に再構築 */
+function refreshDynamicForScreen(){
+  if (state.screen === 'history'){ renderHistoryList(); }
+  if (state.screen === 'mode1' && roundState.select.uiState === 'revealed'){ renderRevealText('mode1'); }
+  if (state.screen === 'mode2' && roundState.input.uiState === 'revealed'){ renderRevealText('mode2'); }
+}
+
+/* ==================================================================
+   画面遷移
+   ================================================================== */
+function showScreen(name){
+  stopAllScheduledAudio();
+  stopContinuousPlayback();
+  if (challenge60.tickIntervalId){ clearInterval(challenge60.tickIntervalId); challenge60.tickIntervalId = null; }
+  if (state.testPlaying){
+    state.testPlaying = false;
+    if (state.testPlayTimeoutId){
+      clearTimeout(state.testPlayTimeoutId);
+      state.testPlayTimeoutId = null;
+    }
+  }
+  commitCurrentSession();
+
+  qsa(document, '.screen').forEach(function(s){ s.classList.remove('active'); });
+  var target = document.getElementById('screen-' + name);
+  if (target) target.classList.add('active');
+  state.screen = name;
+
+  if (name === 'mode1'){ startNewSession('select', state.listenSubMode); enterListenMode('select'); }
+  if (name === 'mode2'){ startNewSession('input', state.listenSubMode); enterListenMode('input'); }
+  if (name === 'mode3') startTapRound();
+  if (name === 'mode4') startTempoKeepRound();
+  if (name === 'history') renderHistoryList();
+  if (name === 'settings') renderSettingsUI();
+}
+
+function enterListenMode(type){
+  var rs = roundState[type];
+  rs.streak = 0;
+  rs.correctCount = 0;
+  rs.incorrectCount = 0;
+  rs.lives = 3;
+  if (state.listenSubMode === 'challenge60'){
+    rs.uiState = 'prestart';
+    renderModeScreen(type);
+  } else {
+    startRound(type);
+  }
+}
+
+/* ==================================================================
+   セッション記録 (選択/入力モードの連続プレイをまとめて履歴化)
+   ================================================================== */
+function startNewSession(type, subMode){
+  commitCurrentSession();
+  currentSession = {
+    id: 'h' + Date.now() + Math.floor(Math.random() * 1000),
+    type: type,
+    subMode: subMode,
+    timestamp: Date.now(),
+    correctCount: 0,
+    incorrectCount: 0,
+    details: []
+  };
+}
+
+function commitCurrentSession(){
+  if (!currentSession) return;
+  if (currentSession.details.length === 0){ currentSession = null; return; }
+  state.history.push(currentSession);
+  saveHistoryToStorage();
+  currentSession = null;
+}
+
+function recordSessionDetail(type, detail){
+  if (!currentSession) return;
+  currentSession.details.push(detail);
+  if (detail.correct === true) currentSession.correctCount++;
+  else if (detail.correct === false) currentSession.incorrectCount++;
+}
+
+/* ==================================================================
+   オーディオエンジン
+   ================================================================== */
+function ensureAudioContext(){
+  if (!state.audioCtx){
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    state.audioCtx = new Ctx();
+  }
+  if (state.audioCtx.state === 'suspended'){
+    state.audioCtx.resume();
+  }
+  return state.audioCtx;
+}
+
+function trackNode(node){
+  state.activeAudioNodes.push(node);
+  node.onended = function(){
+    var i = state.activeAudioNodes.indexOf(node);
+    if (i >= 0) state.activeAudioNodes.splice(i, 1);
+  };
+}
+
+function stopAllScheduledAudio(){
+  state.activeAudioNodes.forEach(function(node){
+    try { node.stop(); } catch(e){ /* already stopped */ }
+  });
+  state.activeAudioNodes = [];
+}
+
+function scheduleClick(ctx, time, opts){
+  opts = opts || {};
+  var accent = !!opts.accent;
+  var volume = (opts.volume === undefined) ? state.settings.clickVolume : opts.volume;
+  var timbre = opts.timbre || state.settings.clickSound;
+  var gain = ctx.createGain();
+  gain.connect(ctx.destination);
+  var peak = (accent ? 1.0 : 0.82) * volume;
+
+  if (timbre === 'wood'){
+    var dur = 0.055;
+    var bufferSize = Math.floor(ctx.sampleRate * dur);
+    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    var data = buffer.getChannelData(0);
+    for (var i = 0; i < bufferSize; i++){
+      var decay = Math.pow(1 - i / bufferSize, 3);
+      data[i] = (Math.random() * 2 - 1) * decay;
+    }
+    var src = ctx.createBufferSource();
+    src.buffer = buffer;
+    var filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = accent ? 2400 : 1700;
+    filter.Q.value = 2.4;
+    src.connect(filter).connect(gain);
+    gain.gain.setValueAtTime(peak, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + dur);
+    src.start(time);
+    src.stop(time + dur);
+    trackNode(src);
+  } else {
+    var osc = ctx.createOscillator();
+    osc.type = (timbre === 'beep') ? 'square' : 'sine';
+    osc.frequency.value = accent ? 1600 : (timbre === 'beep' ? 900 : 1100);
+    osc.connect(gain);
+    gain.gain.setValueAtTime(peak, time);
+    gain.gain.exponentialRampToValueAtTime(0.001, time + 0.045);
+    osc.start(time);
+    osc.stop(time + 0.05);
+    trackNode(osc);
+  }
+}
+
+/* 正解/不正解の効果音 (60秒チャレンジ用) */
+function playCorrectSfx(){
+  var ctx = ensureAudioContext();
+  var t0 = ctx.currentTime;
+  [1568, 2093].forEach(function(freq, i){
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain).connect(ctx.destination);
+    var start = t0 + i * 0.07;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.5 * state.settings.clickVolume + 0.001, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+    osc.start(start);
+    osc.stop(start + 0.2);
+    trackNode(osc);
+  });
+}
+
+function playIncorrectSfx(){
+  var ctx = ensureAudioContext();
+  var t0 = ctx.currentTime;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.type = 'sawtooth';
+  osc.frequency.setValueAtTime(180, t0);
+  osc.frequency.exponentialRampToValueAtTime(90, t0 + 0.28);
+  osc.connect(gain).connect(ctx.destination);
+  gain.gain.setValueAtTime(0.35 * state.settings.clickVolume + 0.001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.3);
+  osc.start(t0);
+  osc.stop(t0 + 0.3);
+  trackNode(osc);
+}
+
+/* ---- フラッシュ / バイブ (音を出せない環境向けのビート通知) ---- */
+function triggerFlash(){
+  var html = document.documentElement;
+  html.classList.remove('flash-active');
+  void html.offsetWidth;
+  html.classList.add('flash-active');
+  setTimeout(function(){ html.classList.remove('flash-active'); }, 100);
+}
+
+function triggerVibrate(){
+  if (navigator.vibrate){
+    try { navigator.vibrate(60); } catch(e){ /* 非対応環境は無視 */ }
+  }
+}
+
+/* アプリが主導する拍(自動再生)にビジュアル/フラッシュ/バイブを同期させる */
+function scheduleBeatEffects(delayMs, pulseEl){
+  setTimeout(function(){
+    if (pulseEl){
+      pulseEl.classList.remove('beat');
+      void pulseEl.offsetWidth;
+      pulseEl.classList.add('beat');
+    }
+    if (state.settings.flash) triggerFlash();
+    if (state.settings.vibrate) triggerVibrate();
+  }, Math.max(0, delayMs));
+}
+
+function playTempoPreview(tempo, screenEl){
+  stopAllScheduledAudio();
+  var ctx = ensureAudioContext();
+  var startDelay = 0.08;
+  var interval = 60 / tempo;
+  var startTime = ctx.currentTime + startDelay;
+  var pulseEl = screenEl ? qs(screenEl, '[data-pulse]') : null;
+  for (var i = 0; i < 8; i++){
+    var tm = startTime + i * interval;
+    scheduleClick(ctx, tm, { accent: i === 0 });
+    scheduleBeatEffects((startDelay + i * interval) * 1000, pulseEl);
+  }
+}
+
+/* ---- 連続再生スケジューラ (60秒チャレンジ) ---- */
+function startContinuousPlayback(tempo, pulseEl){
+  stopContinuousPlayback();
+  var ctx = ensureAudioContext();
+  continuousPlayback.active = true;
+  continuousPlayback.interval = 60 / tempo;
+  continuousPlayback.ctxTime = ctx.currentTime + 0.05;
+  continuousPlayback.pulseEl = pulseEl || null;
+  scheduleContinuousBatch();
+}
+
+function scheduleContinuousBatch(){
+  if (!continuousPlayback.active) return;
+  var ctx = state.audioCtx;
+  var batchSize = 4;
+  var nowCtx = ctx.currentTime;
+  for (var i = 0; i < batchSize; i++){
+    var tm = continuousPlayback.ctxTime + i * continuousPlayback.interval;
+    scheduleClick(ctx, tm, { accent: false });
+    var delayMs = (tm - nowCtx) * 1000;
+    scheduleBeatEffects(delayMs, continuousPlayback.pulseEl);
+  }
+  var batchDurationMs = batchSize * continuousPlayback.interval * 1000;
+  continuousPlayback.ctxTime += batchSize * continuousPlayback.interval;
+  continuousPlayback.batchTimeoutId = setTimeout(scheduleContinuousBatch, Math.max(50, batchDurationMs - 150));
+}
+
+function stopContinuousPlayback(){
+  continuousPlayback.active = false;
+  if (continuousPlayback.batchTimeoutId){
+    clearTimeout(continuousPlayback.batchTimeoutId);
+    continuousPlayback.batchTimeoutId = null;
+  }
+  stopAllScheduledAudio();
+}
+
+/* ==================================================================
+   設定画面: テスト再生 (8拍再生 / もう一度押すと停止)
+   ================================================================== */
+var TEST_PLAY_TEMPO = 120;
+
+function toggleTestPlay(){
+  var btn = document.getElementById('btn-test-play');
+  if (state.testPlaying){
+    stopAllScheduledAudio();
+    if (state.testPlayTimeoutId){
+      clearTimeout(state.testPlayTimeoutId);
+      state.testPlayTimeoutId = null;
+    }
+    state.testPlaying = false;
+    renderTestPlayButton(btn);
+    return;
+  }
+  stopAllScheduledAudio();
+  var ctx = ensureAudioContext();
+  var startDelay = 0.08;
+  var interval = 60 / TEST_PLAY_TEMPO;
+  var startTime = ctx.currentTime + startDelay;
+  for (var i = 0; i < 8; i++){
+    scheduleClick(ctx, startTime + i * interval, { accent: i === 0 });
+    scheduleBeatEffects((startDelay + i * interval) * 1000, null);
+  }
+  state.testPlaying = true;
+  renderTestPlayButton(btn);
+  var totalMs = (startDelay + 8 * interval) * 1000 + 60;
+  state.testPlayTimeoutId = setTimeout(function(){
+    state.testPlaying = false;
+    state.testPlayTimeoutId = null;
+    renderTestPlayButton(document.getElementById('btn-test-play'));
+  }, totalMs);
+}
+
+function renderTestPlayButton(btn){
+  if (!btn) return;
+  btn.textContent = state.testPlaying ? t('btnTestStop') : t('btnTestPlay');
+  btn.classList.toggle('is-playing', state.testPlaying);
+}
+
+/* ==================================================================
+   選択肢生成 (モード1)
+   ================================================================== */
+function buildChoices(correctTempo){
+  var correctIndex = TEMPO_LIST.indexOf(correctTempo);
+  var windowSize = DIFFICULTY_WINDOW[state.settings.difficulty] || 3;
+  var lo, hi, candidates, expand;
+
+  expand = windowSize;
+  do {
+    lo = Math.max(0, correctIndex - expand);
+    hi = Math.min(TEMPO_LIST.length - 1, correctIndex + expand);
+    candidates = [];
+    for (var i = lo; i <= hi; i++){
+      if (i !== correctIndex) candidates.push(i);
+    }
+    expand++;
+  } while (candidates.length < 3 && (lo > 0 || hi < TEMPO_LIST.length - 1));
+
+  shuffleArray(candidates);
+  var pickedIdx = candidates.slice(0, 3);
+  var values = pickedIdx.map(function(i){ return TEMPO_LIST[i]; });
+  values.push(correctTempo);
+  shuffleArray(values);
+  return values;
+}
+
+/* ==================================================================
+   モード1・2 共通進行ロジック (無制限 / 生き残り)
+   ================================================================== */
+function startRound(type){
+  var rs = roundState[type];
+  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.uiState = 'ready';
+  if (type === 'select'){
+    rs.choices = buildChoices(rs.tempo);
+  }
+  renderModeScreen(type);
+}
+
+function rerollRound(type){
+  startRound(type);
+}
+
+function renderModeScreen(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var rs = roundState[type];
+
+  screenEl.setAttribute('data-submode', state.listenSubMode);
+  screenEl.setAttribute('data-uistate', rs.uiState);
+
+  qs(screenEl, '[data-streak-value]').textContent = rs.streak;
+  qs(screenEl, '[data-reveal]').classList.remove('show');
+
+  if (state.listenSubMode === 'survival'){
+    renderLifeDisplay(type);
+  }
+
+  if (type === 'select'){
+    var grid = qs(screenEl, '[data-choice-grid]');
+    grid.innerHTML = '';
+    rs.choices.forEach(function(val){
+      var btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'choice-btn';
+      btn.setAttribute('data-value', val);
+      btn.innerHTML = '<span class="num">' + val + '</span><span class="unit">BPM</span>';
+      btn.addEventListener('click', function(){
+        onSelectAnswer(parseInt(this.getAttribute('data-value'), 10), this);
+      });
+      grid.appendChild(btn);
+    });
+  } else {
+    var input = qs(screenEl, '#input-tempo');
+    input.value = '';
+    input.disabled = false;
+    var answerBtn = qs(screenEl, '.btn-answer');
+    answerBtn.disabled = true;
+    answerBtn.classList.remove('is-correct', 'is-incorrect');
+  }
+}
+
+function onSelectAnswer(value, btnEl){
+  var rs = roundState.select;
+  if (state.listenSubMode === 'challenge60'){
+    handleChallengeAnswer('select', value === rs.tempo, value, btnEl);
+    return;
+  }
+  if (rs.uiState !== 'ready') return;
+  var correct = (value === rs.tempo);
+  btnEl.classList.add(correct ? 'is-correct' : 'is-incorrect');
+  qsa(btnEl.parentElement, '.choice-btn').forEach(function(b){ b.disabled = true; });
+  handleUnlimitedOrSurvivalAnswer('select', correct, value);
+}
+
+function onInputAnswer(){
+  var rs = roundState.input;
+  var screenEl = document.getElementById('screen-mode2');
+  var input = qs(screenEl, '#input-tempo');
+  var value = parseInt(input.value, 10);
+  if (isNaN(value)) return;
+  var correct = (value === rs.tempo);
+
+  if (state.listenSubMode === 'challenge60'){
+    handleChallengeAnswer('input', correct, value, null);
+    return;
+  }
+  if (rs.uiState !== 'ready') return;
+
+  var answerBtn = qs(screenEl, '.btn-answer');
+  answerBtn.classList.add(correct ? 'is-correct' : 'is-incorrect');
+  input.disabled = true;
+  handleUnlimitedOrSurvivalAnswer('input', correct, value);
+}
+
+function handleUnlimitedOrSurvivalAnswer(type, correct, value){
+  var rs = roundState[type];
+  var isSurvival = (state.listenSubMode === 'survival');
+
+  rs.streak = correct ? rs.streak + 1 : 0;
+
+  if (isSurvival && !correct){
+    rs.lives = Math.max(0, rs.lives - 1);
+  }
+
+  var detail = { correct: correct, targetTempo: rs.tempo, userTempo: value, timestamp: Date.now() };
+  if (isSurvival) detail.livesAfter = rs.lives;
+  recordSessionDetail(type, detail);
+
+  var gainedLife = false;
+  if (isSurvival && correct && rs.streak > 0 && rs.streak % 5 === 0){
+    rs.lives += 1;
+    gainedLife = true;
+    recordSessionDetail(type, { kind: 'lifegain', livesAfter: rs.lives, timestamp: Date.now() });
+  }
+
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  qs(screenEl, '[data-streak-value]').textContent = rs.streak;
+
+  if (isSurvival){
+    if (gainedLife){ triggerLifeGainAnimation(type); }
+    else { renderLifeDisplay(type); }
+  }
+
+  if (isSurvival && rs.lives <= 0){
+    endSurvival(type);
+    return;
+  }
+
+  rs.uiState = 'revealed';
+  screenEl.setAttribute('data-uistate', 'revealed');
+  renderRevealText(modeScreenId(type));
+}
+
+function renderRevealText(screenName){
+  var screenEl = document.getElementById('screen-' + screenName);
+  var revealBox = qs(screenEl, '[data-reveal]');
+  var type = screenName === 'mode1' ? 'select' : 'input';
+  var tempo = roundState[type].tempo;
+  qs(revealBox, '[data-reveal-value]').textContent = formatTempo(tempo);
+  revealBox.classList.add('show');
+}
+
+/* ---- 生き残りモード: ライフ表示・アニメーション・終了処理 ---- */
+function renderLifeDisplay(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var el = qs(screenEl, '[data-life-display]');
+  if (!el) return;
+  var rs = roundState[type];
+  var hearts = '';
+  for (var i = 0; i < rs.lives; i++){ hearts += '\u2764'; }
+  el.textContent = hearts || '\u2013';
+}
+
+function triggerLifeGainAnimation(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var flying = document.createElement('span');
+  flying.className = 'life-fly';
+  flying.textContent = '\u2764';
+  screenEl.appendChild(flying);
+  requestAnimationFrame(function(){ flying.classList.add('fly-active'); });
+  setTimeout(function(){
+    flying.remove();
+    renderLifeDisplay(type);
+  }, 2000);
+}
+
+function endSurvival(type){
+  var rs = roundState[type];
+  rs.uiState = 'gameover';
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  screenEl.setAttribute('data-uistate', 'gameover');
+  qs(screenEl, '[data-reveal]').classList.remove('show');
+  renderResultPanel(type, 'gameover');
+  commitCurrentSession();
+}
+
+function renderResultPanel(type, kind){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var titleEl = qs(screenEl, '[data-result-title]');
+  var statsEl = qs(screenEl, '[data-result-stats]');
+  var correctCount = currentSession ? currentSession.correctCount : 0;
+  var incorrectCount = currentSession ? currentSession.incorrectCount : 0;
+  if (kind === 'gameover'){
+    titleEl.textContent = t('resultGameOver');
+    statsEl.textContent = t('resultCorrectCount') + ' ' + correctCount;
+  } else {
+    titleEl.textContent = t('resultTimeUp');
+    statsEl.textContent = t('resultCorrectCount') + ' ' + correctCount + '  /  ' + t('resultIncorrectCount') + ' ' + incorrectCount;
+  }
+}
+
+/* ---- 60秒チャレンジ ---- */
+function startChallenge60(type){
+  var rs = roundState[type];
+  rs.uiState = 'playing';
+  rs.tempo = pickRandomTempo(rs.tempo);
+  if (type === 'select') rs.choices = buildChoices(rs.tempo);
+
+  challenge60.active = true;
+  challenge60.endTime = performance.now() + 60000;
+
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  screenEl.setAttribute('data-uistate', 'playing');
+  renderModeScreen(type);
+
+  var pulseEl = qs(screenEl, '[data-pulse]');
+  startContinuousPlayback(rs.tempo, pulseEl);
+
+  challenge60.tickIntervalId = setInterval(function(){ updateChallengeTimer(type); }, 31);
+  updateChallengeTimer(type);
+}
+
+function updateChallengeTimer(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var el = qs(screenEl, '[data-challenge-timer]');
+  var remaining = challenge60.endTime - performance.now();
+  if (remaining <= 0){
+    if (el) el.textContent = '0.000';
+    endChallenge60(type);
+    return;
+  }
+  if (el) el.textContent = (remaining / 1000).toFixed(3);
+}
+
+function handleChallengeAnswer(type, correct, value, btnEl){
+  var rs = roundState[type];
+  if (rs.uiState !== 'playing') return;
+  stopContinuousPlayback();
+
+  if (correct){ playCorrectSfx(); } else { playIncorrectSfx(); }
+
+  var remainingMs = Math.max(0, challenge60.endTime - performance.now());
+  recordSessionDetail(type, { correct: correct, targetTempo: rs.tempo, userTempo: value, timeRemainingMs: Math.round(remainingMs), timestamp: Date.now() });
+
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  if (type === 'select'){
+    qsa(screenEl, '.choice-btn').forEach(function(b){ b.disabled = true; });
+    if (btnEl) btnEl.classList.add(correct ? 'is-correct' : 'is-incorrect');
+  } else {
+    qs(screenEl, '.btn-answer').classList.add(correct ? 'is-correct' : 'is-incorrect');
+    qs(screenEl, '#input-tempo').disabled = true;
+  }
+
+  setTimeout(function(){
+    if (remainingMs <= 0 || challenge60.endTime - performance.now() <= 0){
+      endChallenge60(type);
+    } else {
+      advanceChallengeQuestion(type);
+    }
+  }, 300);
+}
+
+function advanceChallengeQuestion(type){
+  var rs = roundState[type];
+  if (rs.uiState !== 'playing') return;
+  rs.tempo = pickRandomTempo(rs.tempo);
+  if (type === 'select') rs.choices = buildChoices(rs.tempo);
+  renderModeScreen(type);
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var pulseEl = qs(screenEl, '[data-pulse]');
+  startContinuousPlayback(rs.tempo, pulseEl);
+}
+
+function endChallenge60(type){
+  var rs = roundState[type];
+  if (rs.uiState === 'timeup') return;
+  stopContinuousPlayback();
+  if (challenge60.tickIntervalId){ clearInterval(challenge60.tickIntervalId); challenge60.tickIntervalId = null; }
+  challenge60.active = false;
+  rs.uiState = 'timeup';
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  screenEl.setAttribute('data-uistate', 'timeup');
+  renderResultPanel(type, 'timeup');
+  commitCurrentSession();
+}
+
+/* ==================================================================
+   モード3 : 自力タップ
+   ================================================================== */
+function startTapRound(){
+  var rs = roundState.tap;
+  rs.tempo = pickRandomTempo(rs.tempo);
+  resetTapAttempt();
+  renderTapScreen();
+}
+
+function rerollTap(){
+  var rs = roundState.tap;
+  rs.tempo = pickRandomTempo(rs.tempo);
+  resetTapAttempt();
+  renderTapScreen();
+}
+
+function resetTapAttempt(){
+  var rs = roundState.tap;
+  rs.times = [];
+  rs.tempos = [];
+  rs.xTimes = [];
+  rs.finished = false;
+}
+
+function renderTapScreen(){
+  var screenEl = document.getElementById('screen-mode3');
+  var rs = roundState.tap;
+  qs(screenEl, '[data-target-value]').textContent = formatTempo(rs.tempo);
+  qs(screenEl, '[data-tap-count]').textContent = '0';
+  qs(screenEl, '[data-tap-result]').classList.remove('show');
+  qs(screenEl, '[data-graph-container]').innerHTML = '';
+}
+
+function onTap(){
+  var rs = roundState.tap;
+  if (rs.finished) return;
+  var ctx = ensureAudioContext();
+  scheduleClick(ctx, ctx.currentTime, { accent: rs.times.length === 0 });
+
+  var now = performance.now();
+  rs.times.push(now);
+
+  var screenEl = document.getElementById('screen-mode3');
+  var tapBtn = qs(screenEl, '#btn-tap');
+  tapBtn.classList.remove('tapped');
+  void tapBtn.offsetWidth;
+  tapBtn.classList.add('tapped');
+
+  qs(screenEl, '[data-tap-count]').textContent = String(rs.times.length);
+
+  if (rs.times.length >= 2){
+    var last = rs.times.length - 1;
+    var intervalMs = rs.times[last] - rs.times[last - 1];
+    var bpm = 60000 / intervalMs;
+    rs.tempos.push(bpm);
+    rs.xTimes.push((rs.times[last] - rs.times[0]) / 1000);
+  }
+
+  if (rs.times.length >= 8){
+    rs.finished = true;
+    finishTapRound();
+  }
+}
+
+function finishTapRound(){
+  var rs = roundState.tap;
+  var screenEl = document.getElementById('screen-mode3');
+  var avg = rs.tempos.reduce(function(a,b){ return a+b; }, 0) / rs.tempos.length;
+
+  qs(screenEl, '[data-avg-tempo]').textContent = formatTempo(Math.round(avg));
+  qs(screenEl, '[data-target-value-2]').textContent = formatTempo(rs.tempo);
+
+  var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes);
+  qs(screenEl, '[data-graph-container]').innerHTML = graphHtml;
+
+  qs(screenEl, '[data-tap-result]').classList.add('show');
+
+  recordHistory({
+    type: 'tap',
+    targetTempo: rs.tempo,
+    avgTempo: avg,
+    tapTempos: rs.tempos.slice(),
+    xTimes: rs.xTimes.slice()
+  });
+}
+
+/* ==================================================================
+   モード4 : テンポキープ
+   ================================================================== */
+function startTempoKeepRound(){
+  var rs = roundState.tempokeep;
+  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.phase = 'idle';
+  rs.times = []; rs.tempos = []; rs.xTimes = [];
+  rs.expectedTaps = rs.measures * 4;
+  renderTempoKeepScreen();
+}
+
+function rerollTempoKeep(){
+  startTempoKeepRound();
+}
+
+function renderTempoKeepScreen(){
+  var screenEl = document.getElementById('screen-mode4');
+  var rs = roundState.tempokeep;
+  qs(screenEl, '[data-tk-target-main]').textContent = formatTempo(rs.tempo);
+  var measuresInput = qs(screenEl, '#input-measures');
+  measuresInput.value = rs.measures;
+  measuresInput.disabled = false;
+  qs(screenEl, '#btn-tempokeep-play').disabled = false;
+  qs(screenEl, '#btn-tempokeep-tap').disabled = true;
+  qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
+  updateTempoKeepProgress();
+}
+
+function updateTempoKeepProgress(){
+  var screenEl = document.getElementById('screen-mode4');
+  var rs = roundState.tempokeep;
+  qs(screenEl, '[data-tempokeep-progress]').textContent = rs.tempos.length + ' / ' + rs.expectedTaps;
+}
+
+function startTempoKeepCountIn(){
+  var rs = roundState.tempokeep;
+  if (rs.phase === 'countin') return;
+
+  rs.expectedTaps = rs.measures * 4;
+  rs.times = []; rs.tempos = []; rs.xTimes = [];
+  rs.phase = 'countin';
+
+  var screenEl = document.getElementById('screen-mode4');
+  qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
+  qs(screenEl, '#input-measures').disabled = true;
+  qs(screenEl, '#btn-tempokeep-play').disabled = true;
+  qs(screenEl, '#btn-tempokeep-tap').disabled = false;
+  updateTempoKeepProgress();
+
+  var ctx = ensureAudioContext();
+  var startDelay = 0.08;
+  var interval = 60 / rs.tempo;
+  var startTime = ctx.currentTime + startDelay;
+  var pulseEl = qs(screenEl, '[data-pulse]');
+
+  for (var i = 0; i < 4; i++){
+    var tm = startTime + i * interval;
+    scheduleClick(ctx, tm, { accent: i === 0 });
+    scheduleBeatEffects((startDelay + i * interval) * 1000, pulseEl);
+  }
+
+  var nowPerf = performance.now();
+  rs.ignoreUntilMs = nowPerf + (startDelay + 3.5 * interval) * 1000;
+  rs.times = [nowPerf + (startDelay + 3 * interval) * 1000];
+}
+
+function onTempoKeepTap(){
+  var rs = roundState.tempokeep;
+  if (rs.phase !== 'countin') return;
+
+  var screenEl = document.getElementById('screen-mode4');
+  var tapBtn = qs(screenEl, '#btn-tempokeep-tap');
+  tapBtn.classList.remove('tapped');
+  void tapBtn.offsetWidth;
+  tapBtn.classList.add('tapped');
+
+  var ctx = ensureAudioContext();
+  scheduleClick(ctx, ctx.currentTime, { accent: false });
+
+  var now = performance.now();
+  if (now < rs.ignoreUntilMs) return;
+
+  rs.times.push(now);
+  var last = rs.times.length - 1;
+  var intervalMs = rs.times[last] - rs.times[last - 1];
+  var bpm = 60000 / intervalMs;
+  rs.tempos.push(bpm);
+  rs.xTimes.push((rs.times[last] - rs.times[0]) / 1000);
+
+  updateTempoKeepProgress();
+
+  if (rs.tempos.length >= rs.expectedTaps){
+    rs.phase = 'done';
+    finishTempoKeepRound();
+  }
+}
+
+function finishTempoKeepRound(){
+  var rs = roundState.tempokeep;
+  var screenEl = document.getElementById('screen-mode4');
+  var avg = rs.tempos.reduce(function(a,b){ return a+b; }, 0) / rs.tempos.length;
+
+  qs(screenEl, '[data-tk-avg-tempo]').textContent = formatTempo(Math.round(avg));
+  qs(screenEl, '[data-tk-target-value]').textContent = formatTempo(rs.tempo);
+
+  var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes);
+  qs(screenEl, '[data-tk-graph-container]').innerHTML = graphHtml;
+  qs(screenEl, '[data-tempokeep-result]').classList.add('show');
+
+  qs(screenEl, '#input-measures').disabled = false;
+  qs(screenEl, '#btn-tempokeep-play').disabled = false;
+  qs(screenEl, '#btn-tempokeep-tap').disabled = true;
+
+  recordHistory({
+    type: 'tempokeep',
+    targetTempo: rs.tempo,
+    avgTempo: avg,
+    tapTempos: rs.tempos.slice(),
+    xTimes: rs.xTimes.slice(),
+    measures: rs.measures
+  });
+}
+
+/* ==================================================================
+   グラフ描画 (SVG) — 自力タップ・テンポキープで共用
+   ================================================================== */
+function buildTempoGraphSVG(tapTempos, targetTempo, xTimes){
+  var width = 300, height = 176;
+  var marginLeft = 34, marginRight = 14, marginTop = 16, marginBottom = 22;
+  var plotW = width - marginLeft - marginRight;
+  var plotH = height - marginTop - marginBottom;
+
+  var allValues = tapTempos.concat([targetTempo]);
+  var yMin = Math.min.apply(null, allValues);
+  var yMax = Math.max.apply(null, allValues);
+  var minRange = 20;
+  if (yMax - yMin < minRange){
+    var mid = (yMax + yMin) / 2;
+    yMin = mid - minRange / 2;
+    yMax = mid + minRange / 2;
+  }
+  var pad = (yMax - yMin) * 0.18;
+  yMin = Math.max(0, yMin - pad);
+  yMax = yMax + pad;
+
+  var xMax = Math.max.apply(null, xTimes.concat([0.001]));
+
+  function xScale(x){ return marginLeft + (x / xMax) * plotW; }
+  function yScale(y){ return marginTop + plotH - ((y - yMin) / (yMax - yMin)) * plotH; }
+
+  var targetY = yScale(targetTempo);
+
+  var pathD = '';
+  tapTempos.forEach(function(v, i){
+    var x = xScale(xTimes[i]);
+    var y = yScale(v);
+    pathD += (i === 0 ? 'M' : 'L') + x.toFixed(1) + ',' + y.toFixed(1) + ' ';
+  });
+
+  var circles = tapTempos.map(function(v, i){
+    var x = xScale(xTimes[i]);
+    var y = yScale(v);
+    return '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="3.5" class="graph-point" />';
+  }).join('');
+
+  var pointLabels = tapTempos.map(function(v, i){
+    var x = xScale(xTimes[i]);
+    var y = yScale(v);
+    var preferAbove = (i % 2 === 0);
+    var labelY = preferAbove ? y - 9 : y + 15;
+    if (labelY < marginTop + 7) labelY = y + 15;
+    if (labelY > height - marginBottom + 4) labelY = y - 9;
+    return '<text x="' + x.toFixed(1) + '" y="' + labelY.toFixed(1) + '" class="graph-point-label" text-anchor="middle">' + Math.round(v) + '</text>';
+  }).join('');
+
+  var yTicks = [yMin, (yMin + yMax) / 2, yMax];
+  var yTickLabels = yTicks.map(function(v){
+    var y = yScale(v);
+    return '<text x="' + (marginLeft - 6) + '" y="' + (y + 3).toFixed(1) + '" class="graph-axis-label" text-anchor="end">' + Math.round(v) + '</text>';
+  }).join('');
+
+  var gridLines = yTicks.map(function(v){
+    var y = yScale(v);
+    return '<line x1="' + marginLeft + '" y1="' + y.toFixed(1) + '" x2="' + (width - marginRight) + '" y2="' + y.toFixed(1) + '" class="graph-grid" />';
+  }).join('');
+
+  var targetLabelX = width - marginRight;
+  var targetLabelY = targetY - 6 < marginTop + 8 ? targetY + 12 : targetY - 6;
+
+  return '<svg viewBox="0 0 ' + width + ' ' + height + '" class="tempo-graph" role="img">' +
+    gridLines +
+    '<line x1="' + marginLeft + '" y1="' + targetY.toFixed(1) + '" x2="' + (width - marginRight) + '" y2="' + targetY.toFixed(1) + '" class="graph-target-line" />' +
+    '<text x="' + targetLabelX + '" y="' + targetLabelY.toFixed(1) + '" class="graph-target-label" text-anchor="end">' + '\u2669=' + targetTempo + '</text>' +
+    '<path d="' + pathD.trim() + '" class="graph-line" fill="none" />' +
+    circles +
+    pointLabels +
+    yTickLabels +
+    '</svg>';
+}
+
+/* ==================================================================
+   履歴
+   ================================================================== */
+var historyFilter = 'all';
+
+function recordHistory(entry){
+  entry.id = 'h' + Date.now() + Math.floor(Math.random() * 1000);
+  entry.timestamp = Date.now();
+  state.history.push(entry);
+  saveHistoryToStorage();
+}
+
+function modeLabelKey(type){
+  if (type === 'select') return 'modeLabelSelect';
+  if (type === 'input') return 'modeLabelInput';
+  if (type === 'tempokeep') return 'modeLabelTempoKeep';
+  return 'modeLabelTap';
+}
+
+function subModeLabelKey(subMode){
+  if (subMode === 'survival') return 'submodeSurvivalLabel';
+  if (subMode === 'challenge60') return 'submodeChallenge60Label';
+  return 'submodeUnlimitedLabel';
+}
+
+function renderHistoryList(){
+  var listEl = document.getElementById('screen-history').querySelector('[data-history-list]');
+  var filtered = state.history.filter(function(h){
+    return historyFilter === 'all' ? true : h.type === historyFilter;
+  });
+  var sorted = filtered.slice().reverse();
+
+  if (sorted.length === 0){
+    listEl.innerHTML = '<div class="history-empty">' + t('historyEmpty') + '</div>';
+    return;
+  }
+
+  listEl.innerHTML = '';
+  sorted.forEach(function(entry){
+    var row = document.createElement('div');
+    row.className = 'history-row';
+
+    if (entry.type === 'tap' || entry.type === 'tempokeep'){
+      row.innerHTML =
+        '<div class="result-mark tap-icon">\u2669</div>' +
+        '<div class="row-main">' +
+          '<div class="row-mode">' + t(modeLabelKey(entry.type)) + ' \u00b7 <span class="row-date"></span></div>' +
+          '<div class="row-values">' + formatTempo(entry.targetTempo) + ' <span class="avg-inline">\u2192 ' + t('avgTempoLabel') + ' ' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
+        '</div>' +
+        '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
+      row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
+      row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
+    } else {
+      var icon = entry.subMode === 'survival' ? '\u2764' : (entry.subMode === 'challenge60' ? '\u23f1' : '\u2669');
+      var modeLabel = t(modeLabelKey(entry.type)) + ' \u00b7 ' + t(subModeLabelKey(entry.subMode));
+      var summaryHtml = '<span class="count-correct">\u25cb ' + entry.correctCount + '</span><span class="count-incorrect">\u2715 ' + entry.incorrectCount + '</span>';
+      row.innerHTML =
+        '<div class="result-mark tap-icon">' + icon + '</div>' +
+        '<div class="row-main">' +
+          '<div class="row-mode">' + modeLabel + ' \u00b7 <span class="row-date"></span></div>' +
+          '<div class="row-values">' + summaryHtml + '</div>' +
+        '</div>' +
+        '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
+      row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
+      row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
+    }
+    listEl.appendChild(row);
+  });
+}
+
+function openDetailModal(entry){
+  if (entry.type === 'tap' || entry.type === 'tempokeep'){
+    openGraphDetailModal(entry);
+  } else {
+    openSessionDetailModal(entry);
+  }
+}
+
+function openGraphDetailModal(entry){
+  var backdrop = document.getElementById('modal-backdrop');
+  var summary = qs(backdrop, '[data-modal-summary]');
+  summary.innerHTML =
+    '<div class="stat"><span class="lbl">' + t('avgTempoLabel') + '</span><span class="val">' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
+    '<div class="stat"><span class="lbl">' + t('targetTempoLabel') + '</span><span class="val">' + formatTempo(entry.targetTempo) + '</span></div>';
+  var graphHtml = buildTempoGraphSVG(entry.tapTempos, entry.targetTempo, entry.xTimes);
+  qs(backdrop, '[data-modal-graph]').innerHTML = graphHtml;
+  backdrop.classList.add('show');
+}
+
+function openSessionDetailModal(entry){
+  var backdrop = document.getElementById('modal-backdrop');
+  var summary = qs(backdrop, '[data-modal-summary]');
+  summary.innerHTML =
+    '<div class="stat"><span class="lbl">' + t('resultCorrectCount') + '</span><span class="val">' + entry.correctCount + '</span></div>' +
+    '<div class="stat"><span class="lbl">' + t('resultIncorrectCount') + '</span><span class="val">' + entry.incorrectCount + '</span></div>';
+
+  var listHtml = '<div class="detail-log-list">';
+  entry.details.forEach(function(d){
+    if (d.kind === 'lifegain'){
+      listHtml += '<div class="detail-log-row lifegain-row">' +
+        '<span class="log-mark">\u2764+1</span>' +
+        '<span class="log-values">' + t('lifeCountLabel') + ' ' + d.livesAfter + '</span>' +
+        '</div>';
+    } else {
+      var mark = d.correct ? '\u25cb' : '\u2715';
+      var markClass = d.correct ? 'correct' : 'incorrect';
+      var valuesHtml = formatTempo(d.targetTempo);
+      if (!d.correct) valuesHtml += '<span class="wrong-val">(' + d.userTempo + ')</span>';
+      var extra = '';
+      if (entry.subMode === 'survival' && d.livesAfter !== undefined){
+        extra = '<span class="log-extra">' + t('lifeCountLabel') + ' ' + d.livesAfter + '</span>';
+      } else if (entry.subMode === 'challenge60' && d.timeRemainingMs !== undefined){
+        extra = '<span class="log-extra">' + t('remainingLabel') + ' ' + (d.timeRemainingMs / 1000).toFixed(1) + t('secondsUnit') + '</span>';
+      }
+      listHtml += '<div class="detail-log-row">' +
+        '<span class="log-mark ' + markClass + '">' + mark + '</span>' +
+        '<span class="log-values">' + valuesHtml + '</span>' +
+        extra +
+        '</div>';
+    }
+  });
+  listHtml += '</div>';
+  qs(backdrop, '[data-modal-graph]').innerHTML = listHtml;
+  backdrop.classList.add('show');
+}
+
+function closeDetailModal(){
+  document.getElementById('modal-backdrop').classList.remove('show');
+}
+
+/* ==================================================================
+   設定
+   ================================================================== */
+function renderSettingsUI(){
+  var screenEl = document.getElementById('screen-settings');
+  qs(screenEl, '#range-volume').value = state.settings.clickVolume;
+  setSegActive(screenEl, 'clickSound', state.settings.clickSound);
+  setSegActive(screenEl, 'theme', state.settings.theme);
+  setSegActive(screenEl, 'difficulty', state.settings.difficulty);
+  renderTestPlayButton(qs(screenEl, '#btn-test-play'));
+  qsa(screenEl, '[data-setting-checkbox]').forEach(function(cb){
+    var key = cb.getAttribute('data-setting-checkbox');
+    cb.checked = !!state.settings[key];
+  });
+}
+
+function setSegActive(root, segName, value){
+  var seg = root.querySelector('[data-seg="' + segName + '"]');
+  if (!seg) return;
+  qsa(seg, 'button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-value') === value);
+  });
+}
+
+function applyTheme(){
+  document.documentElement.setAttribute('data-theme', state.settings.theme);
+}
+
+function renderSubModeSelector(){
+  qsa(document, '[data-submode-selector] button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-submode-value') === state.listenSubMode);
+  });
+}
+
+/* ==================================================================
+   イベント初期化
+   ================================================================== */
+function initEvents(){
+  document.getElementById('btn-lang').addEventListener('click', function(){
+    state.lang = state.lang === 'ja' ? 'en' : 'ja';
+    applyI18n();
+    refreshDynamicForScreen();
+  });
+
+  qsa(document, '[data-nav]').forEach(function(el){
+    el.addEventListener('click', function(){
+      showScreen(this.getAttribute('data-nav'));
+    });
+  });
+
+  qsa(document, '[data-submode-selector] button').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      state.listenSubMode = this.getAttribute('data-submode-value');
+      renderSubModeSelector();
+    });
+  });
+
+  qsa(document, '.screen').forEach(function(screenEl){
+    screenEl.addEventListener('click', function(evt){
+      var actionEl = evt.target.closest ? evt.target.closest('[data-action]') : null;
+      if (!actionEl) return;
+      var action = actionEl.getAttribute('data-action');
+      var modeType = screenEl.getAttribute('data-mode');
+
+      if (action === 'back-top'){ showScreen('top'); return; }
+
+      if (action === 'reroll'){
+        if (modeType === 'select' || modeType === 'input'){ rerollRound(modeType); }
+        else if (modeType === 'tap'){ rerollTap(); }
+        else if (modeType === 'tempokeep'){ rerollTempoKeep(); }
+        return;
+      }
+      if (action === 'next'){
+        if (modeType === 'select' || modeType === 'input'){ startRound(modeType); }
+        else if (modeType === 'tap'){ startTapRound(); }
+        else if (modeType === 'tempokeep'){ startTempoKeepRound(); }
+        return;
+      }
+      if (action === 'play'){
+        var rsType = modeType === 'select' ? 'select' : 'input';
+        playTempoPreview(roundState[rsType].tempo, screenEl);
+        return;
+      }
+      if (action === 'answer'){ onInputAnswer(); return; }
+      if (action === 'tap'){ onTap(); return; }
+      if (action === 'retry-tap'){
+        resetTapAttempt();
+        renderTapScreen();
+        return;
+      }
+      if (action === 'start-challenge'){
+        if (modeType === 'select' || modeType === 'input'){ startChallenge60(modeType); }
+        return;
+      }
+      if (action === 'retry-session'){
+        if (modeType === 'select' || modeType === 'input'){
+          startNewSession(modeType, state.listenSubMode);
+          if (state.listenSubMode === 'challenge60'){
+            roundState[modeType].uiState = 'prestart';
+            renderModeScreen(modeType);
+          } else if (state.listenSubMode === 'survival'){
+            roundState[modeType].lives = 3;
+            roundState[modeType].streak = 0;
+            startRound(modeType);
+          }
+        }
+        return;
+      }
+      if (action === 'tempokeep-play'){ startTempoKeepCountIn(); return; }
+      if (action === 'tempokeep-tap'){ onTempoKeepTap(); return; }
+      if (action === 'retry-tempokeep'){
+        var rs = roundState.tempokeep;
+        rs.phase = 'idle';
+        rs.times = []; rs.tempos = []; rs.xTimes = [];
+        renderTempoKeepScreen();
+        return;
+      }
+      if (action === 'clear-history'){
+        if (window.confirm(t('confirmClearHistory'))){
+          state.history = [];
+          saveHistoryToStorage();
+          renderHistoryList();
+        }
+        return;
+      }
+      if (action === 'test-play'){ toggleTestPlay(); return; }
+    });
+  });
+
+  var inputTempo = document.getElementById('input-tempo');
+  inputTempo.addEventListener('input', function(){
+    var screenEl = document.getElementById('screen-mode2');
+    var answerBtn = qs(screenEl, '.btn-answer');
+    var val = this.value.trim();
+    answerBtn.disabled = (val === '' || isNaN(parseInt(val, 10)));
+  });
+  inputTempo.addEventListener('keydown', function(evt){
+    if (evt.key === 'Enter'){
+      var screenEl = document.getElementById('screen-mode2');
+      var answerBtn = qs(screenEl, '.btn-answer');
+      if (!answerBtn.disabled) onInputAnswer();
+    }
+  });
+
+  var inputMeasures = document.getElementById('input-measures');
+  inputMeasures.addEventListener('input', function(){
+    var v = parseInt(this.value, 10);
+    if (!isNaN(v) && v >= 1){
+      roundState.tempokeep.measures = Math.min(16, v);
+    }
+  });
+
+  qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      historyFilter = this.getAttribute('data-filter');
+      qsa(document, '[data-history-filters] .filter-btn').forEach(function(b){
+        b.classList.toggle('active', b === btn);
+      });
+      renderHistoryList();
+    });
+  });
+
+  document.getElementById('range-volume').addEventListener('input', function(){
+    state.settings.clickVolume = parseFloat(this.value);
+    saveSettingsToStorage();
+  });
+
+  qsa(document, '[data-seg]').forEach(function(seg){
+    var segName = seg.getAttribute('data-seg');
+    qsa(seg, 'button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var value = this.getAttribute('data-value');
+        state.settings[segName] = value;
+        setSegActive(document.getElementById('screen-settings'), segName, value);
+        if (segName === 'theme') applyTheme();
+        saveSettingsToStorage();
+      });
+    });
+  });
+
+  qsa(document, '[data-setting-checkbox]').forEach(function(cb){
+    cb.addEventListener('change', function(){
+      var key = this.getAttribute('data-setting-checkbox');
+      state.settings[key] = this.checked;
+      saveSettingsToStorage();
+    });
+  });
+
+  document.getElementById('btn-modal-close').addEventListener('click', closeDetailModal);
+  document.getElementById('modal-backdrop').addEventListener('click', function(evt){
+    if (evt.target === this) closeDetailModal();
+  });
+}
+
+/* ==================================================================
+   初期化
+   ================================================================== */
+function init(){
+  loadSettingsFromStorage();
+  loadHistoryFromStorage();
+  applyI18n();
+  applyTheme();
+  renderSubModeSelector();
+  initEvents();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
