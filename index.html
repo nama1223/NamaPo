@@ -3,7 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>NamaTemPoTrainer</title>
+<title>NamaTempoTrainer</title>
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#1E1A28">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="NamaPo">
+<link rel="apple-touch-icon" href="./NamaPo192.png">
 <style>
   :root{
     --bg:#1E1A28;
@@ -168,6 +175,8 @@
     color:var(--text-muted);
     letter-spacing:0.3em;
   }
+  .brand-nama{ color:#72F3F8; }
+  .brand-po{ color:#FFB9B7; }
   .top-menu{
     display:flex;
     flex-direction:column;
@@ -593,6 +602,12 @@
     align-items:center;
     gap:10px;
   }
+  .tk-action-wrap{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:10px;
+  }
   .btn-tap-action{
     width:100%;
     padding:26px 10px;
@@ -603,10 +618,20 @@
     font-weight:700;
     transition:transform 0.08s ease;
   }
+  .btn-tap-action.tk-tall{
+    padding:52px 10px;
+  }
   .btn-tap-action:disabled{ opacity:0.45; }
   .btn-tap-action.tapped{
     transform:scale(0.96);
     background:var(--accent-soft);
+  }
+  .btn-tap-action.beat{
+    animation:actionBeatPulse 0.42s ease-out;
+  }
+  @keyframes actionBeatPulse{
+    0%{ box-shadow:0 0 0 0 color-mix(in srgb, var(--accent) 55%, transparent); }
+    100%{ box-shadow:0 0 0 16px color-mix(in srgb, var(--accent) 0%, transparent); }
   }
   .tap-progress{
     font-family:var(--font-display);
@@ -792,6 +817,14 @@
     border-radius:var(--radius-s);
     font-size:13px;
   }
+  .detail-log-row .log-num{
+    font-family:var(--font-display);
+    font-size:11px;
+    color:var(--text-muted);
+    width:18px;
+    text-align:right;
+    flex-shrink:0;
+  }
   .detail-log-row .log-mark{
     font-weight:700;
     width:20px;
@@ -816,6 +849,15 @@
   }
   .detail-log-row.lifegain-row .log-mark{ color:var(--accent); width:auto; }
   /* ---------- settings ---------- */
+  .btn-pwa-install{
+    width:100%;
+    padding:15px;
+    border-radius:var(--radius-m);
+    background:var(--accent);
+    color:var(--correct-text);
+    font-size:15px;
+    font-weight:700;
+  }
   .settings-group{
     display:flex;
     flex-direction:column;
@@ -1026,7 +1068,7 @@
           </g>
         </svg>
       </div>
-      <span class="brand-name">NamaTemPoTrainer</span>
+      <span class="brand-name"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer</span>
     </div>
     <button id="btn-lang" type="button"></button>
   </header>
@@ -1036,8 +1078,8 @@
     <!-- ============ TOP ============ -->
     <section id="screen-top" class="screen active">
       <div class="title-block">
-        <div class="title-en">NamaTemPoTrainer</div>
-        <div class="title-ja">ナマポ</div>
+        <div class="title-en"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer</div>
+        <div class="title-ja"><span class="brand-nama">ナマ</span><span class="brand-po">ポ</span></div>
       </div>
       <div class="top-menu">
 
@@ -1199,7 +1241,7 @@
       </div>
       <div class="mode-prompt" data-i18n="promptTap"></div>
       <div class="tap-wrap">
-        <button id="btn-tap" class="btn-tap-action" data-action="tap" type="button" data-i18n="btnTap8"></button>
+        <button id="btn-tap" class="btn-tap-action" type="button" data-i18n="btnTap8"></button>
         <div class="tap-progress"><span class="cur" data-tap-count>0</span> / 8</div>
       </div>
       <div class="tap-result" data-tap-result>
@@ -1246,17 +1288,10 @@
         <label class="row-label" data-i18n="tempoKeepTapSoundLabel" for="toggle-tk-tapsound"></label>
         <input id="toggle-tk-tapsound" type="checkbox" class="settings-checkbox" checked>
       </div>
-      <div class="play-wrap">
-        <div class="play-ring">
-          <div class="pulse-ring" data-pulse></div>
-          <button id="btn-tempokeep-play" class="play-btn" data-action="tempokeep-play" type="button" aria-label="play">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M7 5v14l12-7z"/></svg>
-          </button>
-        </div>
-        <div class="play-caption" data-i18n="tempoKeepPlayCaption"></div>
-      </div>
-      <div class="tap-wrap">
-        <button id="btn-tempokeep-tap" class="btn-tap-action" data-action="tempokeep-tap" type="button" disabled data-i18n="btnTapKeep"></button>
+      <div class="tk-action-wrap">
+        <button id="btn-tempokeep-action" class="btn-tap-action tk-tall" type="button">
+          <span data-tk-action-label></span>
+        </button>
         <div class="tap-progress"><span data-tempokeep-progress>0 / 8</span></div>
       </div>
       <div class="tap-result" data-tempokeep-result>
@@ -1305,6 +1340,8 @@
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuSettings"></div>
       </div>
+
+      <button id="btn-pwa-install" class="btn-pwa-install" type="button" data-i18n="btnPwaInstall"></button>
 
       <div class="settings-group">
         <div class="settings-group-title" data-i18n="settingsSoundGroup"></div>
@@ -1375,7 +1412,7 @@
 
       <div class="mode-footer">
         <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
-        <div class="version-tag">NamaTemPoTrainer v2.0</div>
+        <div class="version-tag"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer v2.1</div>
       </div>
     </section>
 
@@ -1488,7 +1525,14 @@ var I18N = {
     detailBtn: '詳細',
     confirmClearHistory: '履歴をすべて消去します。よろしいですか？',
     btnCancel: 'キャンセル',
-    btnConfirmClear: '消去する'
+    btnConfirmClear: '消去する',
+    btnPwaInstall: '\ud83d\udcf2 アプリとしてインストール',
+    pwaAlreadyInstalledTitle: 'インストール済み',
+    pwaAlreadyInstalledBody: 'このアプリはすでにインストールされています。',
+    pwaIosInstallTitle: 'iOSへのインストール方法',
+    pwaIosInstallBody: '<p>Safariでこのページを開いてください。</p><ol><li>画面下部の<strong>共有ボタン（□↑）</strong>をタップ</li><li>「<strong>ホーム画面に追加</strong>」を選択</li><li>右上の「<strong>追加</strong>」をタップ</li></ol><p style="margin-top:8px;font-size:12px;color:var(--text-muted)">※ Chrome・Firefoxでは対応していません。</p>',
+    pwaGenericInstallTitle: 'インストール方法',
+    pwaGenericInstallBody: '<ol><li><strong>Chrome：</strong>アドレスバー右端の「⊕」または「⋮」→「アプリをインストール」</li><li><strong>Edge：</strong>「…」→「アプリ」→「このサイトをアプリとしてインストール」</li></ol>'
   },
   en: {
     menuModeSelect: 'Selection Mode',
@@ -1564,7 +1608,14 @@ var I18N = {
     detailBtn: 'Detail',
     confirmClearHistory: 'This will clear all history. Continue?',
     btnCancel: 'Cancel',
-    btnConfirmClear: 'Clear'
+    btnConfirmClear: 'Clear',
+    btnPwaInstall: '\ud83d\udcf2 Install as an app',
+    pwaAlreadyInstalledTitle: 'Already Installed',
+    pwaAlreadyInstalledBody: 'This app is already installed.',
+    pwaIosInstallTitle: 'How to Install on iOS',
+    pwaIosInstallBody: '<p>Please open this page in Safari.</p><ol><li>Tap the <strong>Share button (square with an arrow)</strong> at the bottom of the screen</li><li>Select "<strong>Add to Home Screen</strong>"</li><li>Tap "<strong>Add</strong>" in the top right</li></ol><p style="margin-top:8px;font-size:12px;color:var(--text-muted)">Not supported in Chrome or Firefox on iOS.</p>',
+    pwaGenericInstallTitle: 'How to Install',
+    pwaGenericInstallBody: '<ol><li><strong>Chrome:</strong> the "⊕" or "⋮" at the right of the address bar → "Install app"</li><li><strong>Edge:</strong> "…" → "Apps" → "Install this site as an app"</li></ol>'
   }
 };
 
@@ -1606,6 +1657,11 @@ var challenge60 = { active: false, endTime: 0, tickIntervalId: null };
 
 /* 連続再生スケジューラ(60秒チャレンジ用) */
 var continuousPlayback = { active: false, ctxTime: 0, interval: 0, batchTimeoutId: null, pulseEl: null };
+
+/* PWAインストールボタン用の状態 */
+var deferredInstallPrompt = null;
+var isIOSDevice = /iphone|ipad|ipod/i.test(navigator.userAgent) && !/crios/i.test(navigator.userAgent);
+var isStandaloneDisplay = window.matchMedia('(display-mode: standalone)').matches || (navigator.standalone === true);
 
 /* ==================================================================
    永続化 (localStorage)
@@ -2455,8 +2511,10 @@ function renderTempoKeepScreen(){
   var measuresInput = qs(screenEl, '#input-measures');
   measuresInput.value = rs.measures;
   measuresInput.disabled = false;
-  qs(screenEl, '#btn-tempokeep-play').disabled = false;
-  qs(screenEl, '#btn-tempokeep-tap').disabled = true;
+  var actionBtn = qs(screenEl, '#btn-tempokeep-action');
+  actionBtn.disabled = false;
+  actionBtn.classList.remove('is-tap-mode');
+  qs(actionBtn, '[data-tk-action-label]').textContent = t('tempoKeepPlayCaption');
   qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
   updateTempoKeepProgress();
 }
@@ -2478,20 +2536,20 @@ function startTempoKeepCountIn(){
   var screenEl = document.getElementById('screen-mode4');
   qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
   qs(screenEl, '#input-measures').disabled = true;
-  qs(screenEl, '#btn-tempokeep-play').disabled = true;
-  qs(screenEl, '#btn-tempokeep-tap').disabled = false;
+  var actionBtn = qs(screenEl, '#btn-tempokeep-action');
+  actionBtn.classList.add('is-tap-mode');
+  qs(actionBtn, '[data-tk-action-label]').textContent = t('btnTapKeep');
   updateTempoKeepProgress();
 
   var ctx = ensureAudioContext();
   var startDelay = 0.08;
   var interval = 60 / rs.tempo;
   var startTime = ctx.currentTime + startDelay;
-  var pulseEl = qs(screenEl, '[data-pulse]');
 
   for (var i = 0; i < 4; i++){
     var tm = startTime + i * interval;
     scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects((startDelay + i * interval) * 1000, pulseEl);
+    scheduleBeatEffects((startDelay + i * interval) * 1000, actionBtn);
   }
 
   var nowPerf = performance.now();
@@ -2499,19 +2557,30 @@ function startTempoKeepCountIn(){
   rs.times = [nowPerf + (startDelay + 3 * interval) * 1000];
 }
 
+/* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン中はタップとして扱う */
+function onTempoKeepActionPress(evt){
+  var rs = roundState.tempokeep;
+  if (rs.phase === 'countin'){
+    if (evt && evt.preventDefault) evt.preventDefault();
+    onTempoKeepTap();
+  } else if (rs.phase === 'idle' || rs.phase === 'done'){
+    if (evt && evt.preventDefault) evt.preventDefault();
+    startTempoKeepCountIn();
+  }
+}
+
 function onTempoKeepTap(){
   var rs = roundState.tempokeep;
   if (rs.phase !== 'countin') return;
 
   var screenEl = document.getElementById('screen-mode4');
-  var tapBtn = qs(screenEl, '#btn-tempokeep-tap');
-  tapBtn.classList.remove('tapped');
-  void tapBtn.offsetWidth;
-  tapBtn.classList.add('tapped');
+  var actionBtn = qs(screenEl, '#btn-tempokeep-action');
+  actionBtn.classList.remove('tapped');
+  void actionBtn.offsetWidth;
+  actionBtn.classList.add('tapped');
 
-  var ctx;
   if (rs.tapSound){
-    ctx = ensureAudioContext();
+    var ctx = ensureAudioContext();
     scheduleClick(ctx, ctx.currentTime, { accent: false });
   }
 
@@ -2546,8 +2615,7 @@ function finishTempoKeepRound(){
   qs(screenEl, '[data-tempokeep-result]').classList.add('show');
 
   qs(screenEl, '#input-measures').disabled = false;
-  qs(screenEl, '#btn-tempokeep-play').disabled = false;
-  qs(screenEl, '#btn-tempokeep-tap').disabled = true;
+  qs(screenEl, '#btn-tempokeep-action').disabled = true;
 
   recordHistory({
     type: 'tempokeep',
@@ -2734,6 +2802,7 @@ function openSessionDetailModal(entry){
     '<div class="stat"><span class="lbl">' + t('resultIncorrectCount') + '</span><span class="val">' + entry.incorrectCount + '</span></div>';
 
   var listHtml = '<div class="detail-log-list">';
+  var qNum = 0;
   entry.details.forEach(function(d){
     if (d.kind === 'lifegain'){
       listHtml += '<div class="detail-log-row lifegain-row">' +
@@ -2741,6 +2810,7 @@ function openSessionDetailModal(entry){
         '<span class="log-values">' + t('lifeCountLabel') + ' ' + d.livesAfter + '</span>' +
         '</div>';
     } else {
+      qNum++;
       var mark = d.correct ? '\u25cb' : '\u2715';
       var markClass = d.correct ? 'correct' : 'incorrect';
       var valuesHtml = formatTempo(d.targetTempo);
@@ -2752,6 +2822,7 @@ function openSessionDetailModal(entry){
         extra = '<span class="log-extra">' + t('remainingLabel') + ' ' + (d.timeRemainingMs / 1000).toFixed(1) + t('secondsUnit') + '</span>';
       }
       listHtml += '<div class="detail-log-row">' +
+        '<span class="log-num">' + qNum + '</span>' +
         '<span class="log-mark ' + markClass + '">' + mark + '</span>' +
         '<span class="log-values">' + valuesHtml + '</span>' +
         extra +
@@ -2765,6 +2836,18 @@ function openSessionDetailModal(entry){
 
 function closeDetailModal(){
   document.getElementById('modal-backdrop').classList.remove('show');
+  qs(document.getElementById('modal-backdrop'), '.modal-title').setAttribute('data-i18n', 'modalDetailTitle');
+}
+
+/* 既存の詳細モーダルをPWAインストール案内などの汎用情報表示にも使い回す */
+function openInfoModal(titleKey, bodyHtml){
+  var backdrop = document.getElementById('modal-backdrop');
+  var titleEl = qs(backdrop, '.modal-title');
+  titleEl.setAttribute('data-i18n', titleKey);
+  titleEl.textContent = t(titleKey);
+  qs(backdrop, '[data-modal-summary]').innerHTML = '';
+  qs(backdrop, '[data-modal-graph]').innerHTML = bodyHtml;
+  backdrop.classList.add('show');
 }
 
 /* ==================================================================
@@ -2868,7 +2951,6 @@ function initEvents(){
         return;
       }
       if (action === 'answer'){ onInputAnswer(); return; }
-      if (action === 'tap'){ onTap(); return; }
       if (action === 'retry-tap'){
         resetTapAttempt();
         renderTapScreen();
@@ -2893,8 +2975,6 @@ function initEvents(){
         }
         return;
       }
-      if (action === 'tempokeep-play'){ startTempoKeepCountIn(); return; }
-      if (action === 'tempokeep-tap'){ onTempoKeepTap(); return; }
       if (action === 'retry-tempokeep'){
         stopAllScheduledAudio();
         var rs = roundState.tempokeep;
@@ -2940,6 +3020,15 @@ function initEvents(){
 
   document.getElementById('toggle-tk-tapsound').addEventListener('change', function(){
     roundState.tempokeep.tapSound = this.checked;
+  });
+
+  /* タップ判定は「指が触れた瞬間」で計測したいので、click(=離した時)ではなくpointerdownを使う */
+  document.getElementById('btn-tap').addEventListener('pointerdown', function(evt){
+    evt.preventDefault();
+    onTap();
+  });
+  document.getElementById('btn-tempokeep-action').addEventListener('pointerdown', function(evt){
+    onTempoKeepActionPress(evt);
   });
 
   qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
@@ -2992,6 +3081,43 @@ function initEvents(){
   document.getElementById('confirm-backdrop').addEventListener('click', function(evt){
     if (evt.target === this) closeConfirmModal();
   });
+
+  window.addEventListener('beforeinstallprompt', function(evt){
+    evt.preventDefault();
+    deferredInstallPrompt = evt;
+    updateInstallButtonVisibility();
+  });
+  window.addEventListener('appinstalled', function(){
+    deferredInstallPrompt = null;
+    isStandaloneDisplay = true;
+    updateInstallButtonVisibility();
+  });
+  document.getElementById('btn-pwa-install').addEventListener('click', function(){
+    if (isStandaloneDisplay){
+      openInfoModal('pwaAlreadyInstalledTitle', '<p>' + t('pwaAlreadyInstalledBody') + '</p>');
+      return;
+    }
+    if (deferredInstallPrompt){
+      var promptEvent = deferredInstallPrompt;
+      deferredInstallPrompt = null;
+      promptEvent.prompt();
+      promptEvent.userChoice.then(function(choice){
+        if (choice.outcome === 'accepted') updateInstallButtonVisibility();
+      });
+      return;
+    }
+    if (isIOSDevice){
+      openInfoModal('pwaIosInstallTitle', t('pwaIosInstallBody'));
+      return;
+    }
+    openInfoModal('pwaGenericInstallTitle', t('pwaGenericInstallBody'));
+  });
+}
+
+function updateInstallButtonVisibility(){
+  var btn = document.getElementById('btn-pwa-install');
+  if (!btn) return;
+  btn.style.display = isStandaloneDisplay ? 'none' : '';
 }
 
 /* ==================================================================
@@ -3003,10 +3129,20 @@ function init(){
   applyI18n();
   applyTheme();
   renderSubModeSelector();
+  updateInstallButtonVisibility();
   initEvents();
 }
 
 document.addEventListener('DOMContentLoaded', init);
+
+/* Service Worker登録 (./sw.js が同じ場所に無い場合は静かに失敗するだけで、アプリ自体は通常通り動作する) */
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').catch(function(e){
+      console.warn('SW registration failed:', e);
+    });
+  });
+}
 </script>
 </body>
 </html>
