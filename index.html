@@ -893,6 +893,13 @@
     accent-color:var(--accent);
     flex-shrink:0;
   }
+  .checkbox-inline{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    font-size:14px;
+    font-weight:600;
+  }
   .btn-danger{
     width:100%;
     padding:13px;
@@ -954,6 +961,54 @@
     background:var(--bg-elevated-2);
     font-size:15px;
     color:var(--text-muted);
+  }
+  /* ---------- confirm modal ---------- */
+  #confirm-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:110;
+  }
+  #confirm-backdrop.show{ display:flex; }
+  #confirm-box{
+    width:100%;
+    max-width:340px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-l);
+    padding:24px 18px 18px;
+    display:flex;
+    flex-direction:column;
+    gap:18px;
+  }
+  .confirm-message{
+    font-size:15px;
+    font-weight:600;
+    text-align:center;
+    line-height:1.6;
+  }
+  .confirm-actions{
+    display:flex;
+    gap:10px;
+  }
+  .confirm-actions button{
+    flex:1;
+    padding:13px 6px;
+    border-radius:var(--radius-m);
+    font-size:14px;
+    font-weight:600;
+  }
+  .btn-confirm-cancel{
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+  }
+  .btn-confirm-danger{
+    background:var(--incorrect-bg);
+    color:var(--incorrect-text);
   }
 </style>
 </head>
@@ -1187,6 +1242,10 @@
         <label class="row-label" data-i18n="measuresLabel" for="input-measures"></label>
         <input id="input-measures" type="number" inputmode="numeric" min="1" max="16" value="2">
       </div>
+      <div class="measures-row">
+        <label class="row-label" data-i18n="tempoKeepTapSoundLabel" for="toggle-tk-tapsound"></label>
+        <input id="toggle-tk-tapsound" type="checkbox" class="settings-checkbox" checked>
+      </div>
       <div class="play-wrap">
         <div class="play-ring">
           <div class="pulse-ring" data-pulse></div>
@@ -1264,12 +1323,14 @@
             </div>
           </div>
           <div class="settings-row">
-            <div class="row-label" data-i18n="settingsFlash"></div>
-            <input type="checkbox" class="settings-checkbox" data-setting-checkbox="flash">
-          </div>
-          <div class="settings-row">
-            <div class="row-label" data-i18n="settingsVibrate"></div>
-            <input type="checkbox" class="settings-checkbox" data-setting-checkbox="vibrate">
+            <label class="checkbox-inline">
+              <input type="checkbox" class="settings-checkbox" data-setting-checkbox="flash">
+              <span data-i18n="settingsFlash"></span>
+            </label>
+            <label class="checkbox-inline">
+              <input type="checkbox" class="settings-checkbox" data-setting-checkbox="vibrate">
+              <span data-i18n="settingsVibrate"></span>
+            </label>
           </div>
         </div>
       </div>
@@ -1332,6 +1393,16 @@
   </div>
 </div>
 
+<div id="confirm-backdrop">
+  <div id="confirm-box" role="dialog" aria-modal="true">
+    <div class="confirm-message" data-confirm-message></div>
+    <div class="confirm-actions">
+      <button id="btn-confirm-cancel" class="btn-confirm-cancel" type="button" data-i18n="btnCancel"></button>
+      <button id="btn-confirm-ok" class="btn-confirm-danger" type="button" data-i18n="btnConfirmClear"></button>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -1369,6 +1440,7 @@ var I18N = {
     avgTempoLabel: '平均テンポ',
     btnRetryTap: 'もう一度タップ',
     measuresLabel: '小節数',
+    tempoKeepTapSoundLabel: '自分のタップ音',
     tempoKeepPlayCaption: 'タップで4拍のお手本を再生',
     promptTempoKeep: '再生ボタンで4拍のお手本を聞いたら、無音になってもそのままタップし続けてテンポをキープしましょう',
     challengeIntro: '60秒以内の正答数にチャレンジ！',
@@ -1414,7 +1486,9 @@ var I18N = {
     modeLabelTap: '自力タップ',
     modeLabelTempoKeep: 'テンポキープ',
     detailBtn: '詳細',
-    confirmClearHistory: '履歴をすべて消去します。よろしいですか？'
+    confirmClearHistory: '履歴をすべて消去します。よろしいですか？',
+    btnCancel: 'キャンセル',
+    btnConfirmClear: '消去する'
   },
   en: {
     menuModeSelect: 'Selection Mode',
@@ -1442,6 +1516,7 @@ var I18N = {
     avgTempoLabel: 'Average tempo',
     btnRetryTap: 'Retry',
     measuresLabel: 'Measures',
+    tempoKeepTapSoundLabel: 'My tap sound',
     tempoKeepPlayCaption: 'Tap to play a 4-beat example',
     promptTempoKeep: 'Play the 4-beat example, then keep tapping the same tempo once it goes silent',
     challengeIntro: 'Challenge: how many can you get right in 60 seconds?',
@@ -1487,7 +1562,9 @@ var I18N = {
     modeLabelTap: 'Self-Paced Tap',
     modeLabelTempoKeep: 'Tempo Keep',
     detailBtn: 'Detail',
-    confirmClearHistory: 'This will clear all history. Continue?'
+    confirmClearHistory: 'This will clear all history. Continue?',
+    btnCancel: 'Cancel',
+    btnConfirmClear: 'Clear'
   }
 };
 
@@ -1518,7 +1595,7 @@ var roundState = {
   select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
   input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
   tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
-  tempokeep: { tempo: null, measures: 2, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 }
+  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 }
 };
 
 /* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
@@ -1753,6 +1830,7 @@ function stopAllScheduledAudio(){
     try { node.stop(); } catch(e){ /* already stopped */ }
   });
   state.activeAudioNodes = [];
+  cancelPendingBeatEffects();
 }
 
 function scheduleClick(ctx, time, opts){
@@ -1845,13 +1923,19 @@ function triggerFlash(){
 
 function triggerVibrate(){
   if (navigator.vibrate){
-    try { navigator.vibrate(60); } catch(e){ /* 非対応環境は無視 */ }
+    try { navigator.vibrate(80); } catch(e){ /* 非対応環境は無視 */ }
   }
 }
 
+/* 予約済みのビート演出(setTimeout)を追跡し、まとめてキャンセルできるようにする。
+   これがないと、音声を停止してもフラッシュ/バイブ/パルスだけ予約通り発火し続けてしまう。 */
+var pendingBeatEffectTimeouts = [];
+
 /* アプリが主導する拍(自動再生)にビジュアル/フラッシュ/バイブを同期させる */
 function scheduleBeatEffects(delayMs, pulseEl){
-  setTimeout(function(){
+  var timeoutId = setTimeout(function(){
+    var idx = pendingBeatEffectTimeouts.indexOf(timeoutId);
+    if (idx >= 0) pendingBeatEffectTimeouts.splice(idx, 1);
     if (pulseEl){
       pulseEl.classList.remove('beat');
       void pulseEl.offsetWidth;
@@ -1860,6 +1944,13 @@ function scheduleBeatEffects(delayMs, pulseEl){
     if (state.settings.flash) triggerFlash();
     if (state.settings.vibrate) triggerVibrate();
   }, Math.max(0, delayMs));
+  pendingBeatEffectTimeouts.push(timeoutId);
+}
+
+function cancelPendingBeatEffects(){
+  pendingBeatEffectTimeouts.forEach(function(id){ clearTimeout(id); });
+  pendingBeatEffectTimeouts = [];
+  document.documentElement.classList.remove('flash-active');
 }
 
 function playTempoPreview(tempo, screenEl){
@@ -1985,6 +2076,7 @@ function buildChoices(correctTempo){
    モード1・2 共通進行ロジック (無制限 / 生き残り)
    ================================================================== */
 function startRound(type){
+  stopAllScheduledAudio();
   var rs = roundState[type];
   rs.tempo = pickRandomTempo(rs.tempo);
   rs.uiState = 'ready';
@@ -2142,6 +2234,7 @@ function triggerLifeGainAnimation(type){
 }
 
 function endSurvival(type){
+  stopAllScheduledAudio();
   var rs = roundState[type];
   rs.uiState = 'gameover';
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
@@ -2342,6 +2435,7 @@ function finishTapRound(){
    モード4 : テンポキープ
    ================================================================== */
 function startTempoKeepRound(){
+  stopAllScheduledAudio();
   var rs = roundState.tempokeep;
   rs.tempo = pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
@@ -2415,8 +2509,11 @@ function onTempoKeepTap(){
   void tapBtn.offsetWidth;
   tapBtn.classList.add('tapped');
 
-  var ctx = ensureAudioContext();
-  scheduleClick(ctx, ctx.currentTime, { accent: false });
+  var ctx;
+  if (rs.tapSound){
+    ctx = ensureAudioContext();
+    scheduleClick(ctx, ctx.currentTime, { accent: false });
+  }
 
   var now = performance.now();
   if (now < rs.ignoreUntilMs) return;
@@ -2582,8 +2679,9 @@ function renderHistoryList(){
     row.className = 'history-row';
 
     if (entry.type === 'tap' || entry.type === 'tempokeep'){
+      var tapIcon = entry.type === 'tempokeep' ? '\u25ce' : '\u2058';
       row.innerHTML =
-        '<div class="result-mark tap-icon">\u2669</div>' +
+        '<div class="result-mark tap-icon">' + tapIcon + '</div>' +
         '<div class="row-main">' +
           '<div class="row-mode">' + t(modeLabelKey(entry.type)) + ' \u00b7 <span class="row-date"></span></div>' +
           '<div class="row-values">' + formatTempo(entry.targetTempo) + ' <span class="avg-inline">\u2192 ' + t('avgTempoLabel') + ' ' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
@@ -2667,6 +2765,23 @@ function openSessionDetailModal(entry){
 
 function closeDetailModal(){
   document.getElementById('modal-backdrop').classList.remove('show');
+}
+
+/* ==================================================================
+   確認モーダル (履歴消去などの破壊的操作用)
+   ================================================================== */
+var pendingConfirmAction = null;
+
+function showConfirmModal(messageKey, onConfirm){
+  var backdrop = document.getElementById('confirm-backdrop');
+  qs(backdrop, '[data-confirm-message]').textContent = t(messageKey);
+  pendingConfirmAction = onConfirm;
+  backdrop.classList.add('show');
+}
+
+function closeConfirmModal(){
+  document.getElementById('confirm-backdrop').classList.remove('show');
+  pendingConfirmAction = null;
 }
 
 /* ==================================================================
@@ -2765,6 +2880,7 @@ function initEvents(){
       }
       if (action === 'retry-session'){
         if (modeType === 'select' || modeType === 'input'){
+          stopAllScheduledAudio();
           startNewSession(modeType, state.listenSubMode);
           if (state.listenSubMode === 'challenge60'){
             roundState[modeType].uiState = 'prestart';
@@ -2780,6 +2896,7 @@ function initEvents(){
       if (action === 'tempokeep-play'){ startTempoKeepCountIn(); return; }
       if (action === 'tempokeep-tap'){ onTempoKeepTap(); return; }
       if (action === 'retry-tempokeep'){
+        stopAllScheduledAudio();
         var rs = roundState.tempokeep;
         rs.phase = 'idle';
         rs.times = []; rs.tempos = []; rs.xTimes = [];
@@ -2787,11 +2904,11 @@ function initEvents(){
         return;
       }
       if (action === 'clear-history'){
-        if (window.confirm(t('confirmClearHistory'))){
+        showConfirmModal('confirmClearHistory', function(){
           state.history = [];
           saveHistoryToStorage();
           renderHistoryList();
-        }
+        });
         return;
       }
       if (action === 'test-play'){ toggleTestPlay(); return; }
@@ -2819,6 +2936,10 @@ function initEvents(){
     if (!isNaN(v) && v >= 1){
       roundState.tempokeep.measures = Math.min(16, v);
     }
+  });
+
+  document.getElementById('toggle-tk-tapsound').addEventListener('change', function(){
+    roundState.tempokeep.tapSound = this.checked;
   });
 
   qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
@@ -2860,6 +2981,16 @@ function initEvents(){
   document.getElementById('btn-modal-close').addEventListener('click', closeDetailModal);
   document.getElementById('modal-backdrop').addEventListener('click', function(evt){
     if (evt.target === this) closeDetailModal();
+  });
+
+  document.getElementById('btn-confirm-cancel').addEventListener('click', closeConfirmModal);
+  document.getElementById('btn-confirm-ok').addEventListener('click', function(){
+    var action = pendingConfirmAction;
+    closeConfirmModal();
+    if (action) action();
+  });
+  document.getElementById('confirm-backdrop').addEventListener('click', function(evt){
+    if (evt.target === this) closeConfirmModal();
   });
 }
 
