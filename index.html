@@ -279,6 +279,14 @@
     color:var(--accent);
     font-size:15px;
   }
+  .streak-badge .question-num-inline{
+    font-family:var(--font-display);
+    font-weight:700;
+    color:var(--text);
+  }
+  .streak-badge .badge-sep{
+    opacity:0.5;
+  }
   [data-submode="challenge60"] .streak-badge{ display:none; }
   .reroll-row{
     display:flex;
@@ -709,6 +717,16 @@
     font-size:14px;
     font-weight:600;
   }
+  .btn-back-top-inline{
+    flex-shrink:0;
+    padding:7px 14px;
+    border-radius:999px;
+    border:1px solid var(--border);
+    background:var(--bg-elevated);
+    color:var(--text-muted);
+    font-size:12px;
+    font-weight:600;
+  }
   /* ---------- history ---------- */
   .filter-row{
     display:flex;
@@ -1129,6 +1147,8 @@
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuModeSelect"></div>
         <div class="streak-badge">
+          <span class="question-num-inline" data-question-num>1</span>
+          <span class="badge-sep">・</span>
           <span data-i18n="streakLabel"></span>
           <span class="streak-value" data-streak-value>0</span>
         </div>
@@ -1179,6 +1199,8 @@
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuModeInput"></div>
         <div class="streak-badge">
+          <span class="question-num-inline" data-question-num>1</span>
+          <span class="badge-sep">・</span>
           <span data-i18n="streakLabel"></span>
           <span class="streak-value" data-streak-value>0</span>
         </div>
@@ -1321,6 +1343,7 @@
     <section id="screen-history" class="screen" data-mode="history">
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuHistory"></div>
+        <button class="btn-back-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
       </div>
       <div class="filter-row" data-history-filters>
         <button class="filter-btn active" data-filter="all" type="button" data-i18n="filterAll"></button>
@@ -1643,8 +1666,8 @@ var state = {
 
 /* モードごとの進行中データ */
 var roundState = {
-  select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
-  input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0 },
+  select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0, questionNumber: 1 },
+  input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0, questionNumber: 1 },
   tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
   tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 }
 };
@@ -1753,6 +1776,10 @@ function formatTempo(n){
   return '\u2669 = ' + n;
 }
 
+function formatQuestionNumber(n){
+  return state.lang === 'ja' ? ('\u7b2c' + n + '\u554f') : ('Q' + n);
+}
+
 function formatDateTime(ms){
   var d = new Date(ms);
   var locale = state.lang === 'ja' ? 'ja-JP' : 'en-US';
@@ -1781,8 +1808,14 @@ function applyI18n(){
 /* 画面ごとの動的表示を言語切替後に再構築 */
 function refreshDynamicForScreen(){
   if (state.screen === 'history'){ renderHistoryList(); }
-  if (state.screen === 'mode1' && roundState.select.uiState === 'revealed'){ renderRevealText('mode1'); }
-  if (state.screen === 'mode2' && roundState.input.uiState === 'revealed'){ renderRevealText('mode2'); }
+  if (state.screen === 'mode1'){
+    qs(document.getElementById('screen-mode1'), '[data-question-num]').textContent = formatQuestionNumber(roundState.select.questionNumber);
+    if (roundState.select.uiState === 'revealed'){ renderRevealText('mode1'); }
+  }
+  if (state.screen === 'mode2'){
+    qs(document.getElementById('screen-mode2'), '[data-question-num]').textContent = formatQuestionNumber(roundState.input.questionNumber);
+    if (roundState.input.uiState === 'revealed'){ renderRevealText('mode2'); }
+  }
 }
 
 /* ==================================================================
@@ -1820,6 +1853,7 @@ function enterListenMode(type){
   rs.correctCount = 0;
   rs.incorrectCount = 0;
   rs.lives = 3;
+  rs.questionNumber = 1;
   if (state.listenSubMode === 'challenge60'){
     rs.uiState = 'prestart';
     renderModeScreen(type);
@@ -2154,6 +2188,7 @@ function renderModeScreen(type){
   screenEl.setAttribute('data-uistate', rs.uiState);
 
   qs(screenEl, '[data-streak-value]').textContent = rs.streak;
+  qs(screenEl, '[data-question-num]').textContent = formatQuestionNumber(rs.questionNumber);
   qs(screenEl, '[data-reveal]').classList.remove('show');
 
   if (state.listenSubMode === 'survival'){
@@ -2220,6 +2255,9 @@ function onInputAnswer(){
 function handleUnlimitedOrSurvivalAnswer(type, correct, value){
   var rs = roundState[type];
   var isSurvival = (state.listenSubMode === 'survival');
+
+  stopAllScheduledAudio();
+  if (correct){ playCorrectSfx(); } else { playIncorrectSfx(); }
 
   rs.streak = correct ? rs.streak + 1 : 0;
 
@@ -2360,7 +2398,12 @@ function handleChallengeAnswer(type, correct, value, btnEl){
 
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
   if (type === 'select'){
-    qsa(screenEl, '.choice-btn').forEach(function(b){ b.disabled = true; });
+    qsa(screenEl, '.choice-btn').forEach(function(b){
+      b.disabled = true;
+      if (!correct && parseInt(b.getAttribute('data-value'), 10) === rs.tempo){
+        b.classList.add('is-correct');
+      }
+    });
     if (btnEl) btnEl.classList.add(correct ? 'is-correct' : 'is-incorrect');
   } else {
     qs(screenEl, '.btn-answer').classList.add(correct ? 'is-correct' : 'is-incorrect');
@@ -2379,6 +2422,7 @@ function handleChallengeAnswer(type, correct, value, btnEl){
 function advanceChallengeQuestion(type){
   var rs = roundState[type];
   if (rs.uiState !== 'playing') return;
+  rs.questionNumber++;
   rs.tempo = pickRandomTempo(rs.tempo);
   if (type === 'select') rs.choices = buildChoices(rs.tempo);
   renderModeScreen(type);
@@ -2940,7 +2984,10 @@ function initEvents(){
         return;
       }
       if (action === 'next'){
-        if (modeType === 'select' || modeType === 'input'){ startRound(modeType); }
+        if (modeType === 'select' || modeType === 'input'){
+          roundState[modeType].questionNumber++;
+          startRound(modeType);
+        }
         else if (modeType === 'tap'){ startTapRound(); }
         else if (modeType === 'tempokeep'){ startTempoKeepRound(); }
         return;
@@ -2964,6 +3011,7 @@ function initEvents(){
         if (modeType === 'select' || modeType === 'input'){
           stopAllScheduledAudio();
           startNewSession(modeType, state.listenSubMode);
+          roundState[modeType].questionNumber = 1;
           if (state.listenSubMode === 'challenge60'){
             roundState[modeType].uiState = 'prestart';
             renderModeScreen(modeType);
