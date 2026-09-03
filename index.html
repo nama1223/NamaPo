@@ -115,7 +115,7 @@
   }
   .pendulum svg{ width:100%; height:100%; display:block; }
   .pendulum .arm{
-    transform-origin:10px 22px;
+    transform-origin:0 0;
     animation:swing 2s ease-in-out infinite alternate;
   }
   @keyframes swing{
@@ -811,6 +811,7 @@
   }
   .count-correct{ color:var(--correct-bg); font-family:var(--font-display); font-weight:700; }
   .count-incorrect{ color:var(--incorrect-bg); font-family:var(--font-display); font-weight:700; margin-left:8px; }
+  .count-percent{ color:var(--text-muted); font-family:var(--font-display); font-weight:600; margin-left:8px; font-size:0.9em; }
   .btn-detail{
     flex-shrink:0;
     padding:8px 12px;
@@ -818,6 +819,19 @@
     border:1px solid var(--border);
     font-size:12px;
     color:var(--accent);
+  }
+  .btn-delete-entry{
+    flex-shrink:0;
+    width:32px;
+    height:32px;
+    border-radius:50%;
+    border:1px solid var(--border);
+    font-size:13px;
+    color:var(--incorrect-bg);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:transparent;
   }
   .detail-log-list{
     display:flex;
@@ -1080,9 +1094,11 @@
       <div class="pendulum" aria-hidden="true">
         <svg viewBox="0 0 20 24">
           <line x1="2" y1="22" x2="18" y2="22" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
-          <g class="arm">
-            <line x1="10" y1="22" x2="10" y2="4" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
-            <circle cx="10" cy="4" r="3" fill="var(--accent)"/>
+          <g transform="translate(10,22)">
+            <g class="arm">
+              <line x1="0" y1="0" x2="0" y2="-18" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
+              <circle cx="0" cy="-18" r="3" fill="var(--accent)"/>
+            </g>
           </g>
         </svg>
       </div>
@@ -1429,7 +1445,6 @@
         <div class="settings-group-title" data-i18n="settingsDataGroup"></div>
         <div class="settings-card">
           <button class="btn-danger" data-action="clear-history" type="button" data-i18n="settingsClearHistory"></button>
-          <div class="settings-note" data-i18n="settingsHistoryNote" style="margin-top:10px;"></div>
         </div>
       </div>
 
@@ -1533,7 +1548,6 @@ var I18N = {
     difficultyHard: 'むずかしい',
     settingsDataGroup: 'データ',
     settingsClearHistory: '履歴をすべて消去',
-    settingsHistoryNote: '履歴はこの端末のブラウザに保存され、次回開いたときも引き継がれます。(Claude.aiのプレビュー画面内では保存されない場合があります)',
     btnTestPlay: '試聴',
     btnTestStop: '停止',
     promptSelect: '音を聞いて、近いテンポを選んでください',
@@ -1547,6 +1561,8 @@ var I18N = {
     modeLabelTempoKeep: 'テンポキープ',
     detailBtn: '詳細',
     confirmClearHistory: '履歴をすべて消去します。よろしいですか？',
+    confirmDeleteEntry: 'この記録を削除します。よろしいですか？',
+    percentCorrectLabel: '正答率',
     btnCancel: 'キャンセル',
     btnConfirmClear: '消去する',
     btnPwaInstall: '\ud83d\udcf2 アプリとしてインストール',
@@ -1616,7 +1632,6 @@ var I18N = {
     difficultyHard: 'Hard',
     settingsDataGroup: 'Data',
     settingsClearHistory: 'Clear all history',
-    settingsHistoryNote: 'History is saved in this browser and carries over next time you open the app. (It may not persist inside the Claude.ai preview.)',
     btnTestPlay: 'Play',
     btnTestStop: 'Stop',
     promptSelect: 'Listen, then pick the tempo that matches',
@@ -1630,6 +1645,8 @@ var I18N = {
     modeLabelTempoKeep: 'Tempo Keep',
     detailBtn: 'Detail',
     confirmClearHistory: 'This will clear all history. Continue?',
+    confirmDeleteEntry: 'Delete this entry?',
+    percentCorrectLabel: 'Accuracy',
     btnCancel: 'Cancel',
     btnConfirmClear: 'Clear',
     btnPwaInstall: '\ud83d\udcf2 Install as an app',
@@ -2798,24 +2815,38 @@ function renderHistoryList(){
           '<div class="row-mode">' + t(modeLabelKey(entry.type)) + ' \u00b7 <span class="row-date"></span></div>' +
           '<div class="row-values">' + formatTempo(entry.targetTempo) + ' <span class="avg-inline">\u2192 ' + t('avgTempoLabel') + ' ' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
         '</div>' +
+        '<button class="btn-delete-entry" type="button" aria-label="delete">\ud83d\uddd1</button>' +
         '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
       row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
       row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
+      row.querySelector('.btn-delete-entry').addEventListener('click', function(){ confirmDeleteHistoryEntry(entry.id); });
     } else {
       var icon = entry.subMode === 'survival' ? '\u2764' : (entry.subMode === 'challenge60' ? '\u23f1' : '\u2669');
       var modeLabel = t(modeLabelKey(entry.type)) + ' \u00b7 ' + t(subModeLabelKey(entry.subMode));
-      var summaryHtml = '<span class="count-correct">\u25cb ' + entry.correctCount + '</span><span class="count-incorrect">\u2715 ' + entry.incorrectCount + '</span>';
+      var total = entry.correctCount + entry.incorrectCount;
+      var pct = total > 0 ? Math.round((entry.correctCount / total) * 100) : 0;
+      var summaryHtml = '<span class="count-correct">\u25cb ' + entry.correctCount + '</span><span class="count-incorrect">\u2715 ' + entry.incorrectCount + '</span><span class="count-percent">' + pct + '%</span>';
       row.innerHTML =
         '<div class="result-mark tap-icon">' + icon + '</div>' +
         '<div class="row-main">' +
           '<div class="row-mode">' + modeLabel + ' \u00b7 <span class="row-date"></span></div>' +
           '<div class="row-values">' + summaryHtml + '</div>' +
         '</div>' +
+        '<button class="btn-delete-entry" type="button" aria-label="delete">\ud83d\uddd1</button>' +
         '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
       row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
       row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
+      row.querySelector('.btn-delete-entry').addEventListener('click', function(){ confirmDeleteHistoryEntry(entry.id); });
     }
     listEl.appendChild(row);
+  });
+}
+
+function confirmDeleteHistoryEntry(entryId){
+  showConfirmModal('confirmDeleteEntry', function(){
+    state.history = state.history.filter(function(h){ return h.id !== entryId; });
+    saveHistoryToStorage();
+    renderHistoryList();
   });
 }
 
@@ -2841,9 +2872,12 @@ function openGraphDetailModal(entry){
 function openSessionDetailModal(entry){
   var backdrop = document.getElementById('modal-backdrop');
   var summary = qs(backdrop, '[data-modal-summary]');
+  var total = entry.correctCount + entry.incorrectCount;
+  var pct = total > 0 ? Math.round((entry.correctCount / total) * 100) : 0;
   summary.innerHTML =
     '<div class="stat"><span class="lbl">' + t('resultCorrectCount') + '</span><span class="val">' + entry.correctCount + '</span></div>' +
-    '<div class="stat"><span class="lbl">' + t('resultIncorrectCount') + '</span><span class="val">' + entry.incorrectCount + '</span></div>';
+    '<div class="stat"><span class="lbl">' + t('resultIncorrectCount') + '</span><span class="val">' + entry.incorrectCount + '</span></div>' +
+    '<div class="stat"><span class="lbl">' + t('percentCorrectLabel') + '</span><span class="val">' + pct + '%</span></div>';
 
   var listHtml = '<div class="detail-log-list">';
   var qNum = 0;
