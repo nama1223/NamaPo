@@ -118,6 +118,7 @@
     flex-shrink:0;
   }
   .pendulum svg{ width:100%; height:100%; display:block; }
+  .pendulum .arm{ will-change:transform; }
   #btn-lang{
     padding:6px 12px;
     border:1px solid var(--border);
@@ -272,6 +273,11 @@
     color:var(--accent);
     font-size:15px;
   }
+  .streak-badge .points-inline{
+    font-family:var(--font-display);
+    font-weight:700;
+    color:var(--accent);
+  }
   .streak-badge .question-num-inline{
     font-family:var(--font-display);
     font-weight:700;
@@ -281,6 +287,26 @@
     opacity:0.5;
   }
   [data-submode="challenge60"] .streak-badge{ display:none; }
+  .points-fly{
+    position:absolute;
+    left:8%;
+    bottom:32%;
+    font-family:var(--font-display);
+    font-weight:800;
+    font-size:26px;
+    white-space:nowrap;
+    pointer-events:none;
+    z-index:60;
+    animation:points-fly-anim 0.8s cubic-bezier(0.2,0.6,0.35,1) forwards;
+  }
+  .points-fly.judgment-correct{ color:var(--correct-bg); }
+  .points-fly.judgment-near{ color:var(--near-bg); }
+  .points-fly.judgment-wrong{ color:var(--incorrect-bg); }
+  @keyframes points-fly-anim{
+    0%{ opacity:0; left:8%; bottom:30%; transform:scale(0.8); }
+    14%{ opacity:1; transform:scale(1.1); }
+    100%{ opacity:0; left:80%; bottom:76%; transform:scale(1); }
+  }
   .reroll-row{
     display:flex;
     justify-content:center;
@@ -311,6 +337,15 @@
     min-height:26px;
   }
   [data-submode="survival"] .life-display{ display:flex; }
+  .life-heart{ display:inline-block; }
+  .life-heart.life-lost{
+    animation:lifeFall 0.5s ease-in forwards;
+  }
+  @keyframes lifeFall{
+    0%{ transform:translateY(0); opacity:1; }
+    70%{ transform:translateY(28px); opacity:0.9; }
+    100%{ transform:translateY(46px); opacity:0; }
+  }
   .life-fly{
     position:absolute;
     left:50%;
@@ -326,11 +361,11 @@
   }
   @keyframes lifeFly{
     0%{ transform:translate(-50%,-50%) scale(0.4); opacity:0; }
-    15%{ opacity:1; transform:translate(-50%,-62%) scale(1.1); }
-    40%{ transform:translate(-68%,-120%) scale(1); }
-    60%{ transform:translate(-32%,-175%) scale(0.95); }
-    85%{ transform:translate(-50%,-225%) scale(0.8); opacity:1; }
-    100%{ transform:translate(-50%,-250%) scale(0.5); opacity:0; }
+    15%{ opacity:1; transform:translate(-50%,-74%) scale(1.1); }
+    40%{ transform:translate(-68%,-190%) scale(1); }
+    60%{ transform:translate(-32%,-300%) scale(0.95); }
+    85%{ transform:translate(-50%,-400%) scale(0.8); opacity:1; }
+    100%{ transform:translate(-50%,-450%) scale(0.5); opacity:0; }
   }
   /* ---------- 60s challenge ---------- */
   .challenge-prestart{
@@ -684,6 +719,7 @@
   .graph-grid{ stroke:var(--border); stroke-width:1; }
   .graph-band-a{ fill:var(--accent); opacity:0.08; }
   .graph-band-b{ fill:var(--near-bg); opacity:0.12; }
+  .graph-band-label{ font-size:9px; fill:var(--text-muted); font-family:var(--font-display); font-weight:700; }
   .graph-target-line{ stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; }
   .graph-target-label{ fill:var(--accent); font-size:9px; font-family:var(--font-display); }
   .graph-line{ stroke:var(--text); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
@@ -1070,7 +1106,7 @@
     align-items:center;
     justify-content:center;
     padding:20px;
-    z-index:110;
+    z-index:130;
   }
   #confirm-backdrop.show{ display:flex; }
   #confirm-box{
@@ -1228,7 +1264,6 @@
           <line x1="2" y1="22" x2="18" y2="22" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
           <g transform="translate(10,22)">
             <g class="arm">
-              <animateTransform attributeName="transform" type="rotate" values="-18;18;-18" keyTimes="0;0.5;1" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1" dur="2s" repeatCount="indefinite"/>
               <line x1="0" y1="0" x2="0" y2="-18" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
               <circle cx="0" cy="-18" r="3" fill="var(--accent)"/>
             </g>
@@ -1300,6 +1335,8 @@
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuModeSelect"></div>
         <div class="streak-badge">
+          <span class="points-inline" data-points-value>0P</span>
+          <span class="badge-sep">・</span>
           <span class="question-num-inline" data-question-num>1</span>
           <span class="badge-sep">・</span>
           <span data-i18n="streakLabel"></span>
@@ -1352,6 +1389,8 @@
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuModeInput"></div>
         <div class="streak-badge">
+          <span class="points-inline" data-points-value>0P</span>
+          <span class="badge-sep">・</span>
           <span class="question-num-inline" data-question-num>1</span>
           <span class="badge-sep">・</span>
           <span data-i18n="streakLabel"></span>
@@ -1752,6 +1791,7 @@ var I18N = {
     lifeCountLabel: '残りライフ',
     remainingLabel: '残り',
     secondsUnit: '秒',
+    pointsSuffix: 'ポイント',
     filterAll: 'すべて',
     settingsSoundGroup: 'サウンド',
     settingsVolume: 'クリック音量',
@@ -1844,6 +1884,7 @@ var I18N = {
     lifeCountLabel: 'Lives left',
     remainingLabel: 'Remaining',
     secondsUnit: 's',
+    pointsSuffix: 'pts',
     filterAll: 'All',
     settingsSoundGroup: 'Sound',
     settingsVolume: 'Click volume',
@@ -1928,7 +1969,7 @@ var roundState = {
   input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, questionNumber: 1 },
   tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
   tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 },
-  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorChangeTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null }
+  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorSegments: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null }
 };
 
 /* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
@@ -2080,6 +2121,28 @@ function judgeAnswer(target, value){
 
 function judgmentClass(judgment){
   return judgment === 'correct' ? 'is-correct' : (judgment === 'near' ? 'is-near' : 'is-incorrect');
+}
+
+/* 回答時、獲得ポイントを画面上に大きく飛ばして見せる演出 */
+function spawnPointsFly(type, judgment, points){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  if (!screenEl) return;
+  var mark = judgment === 'correct' ? '\u25cb' : (judgment === 'near' ? '\u25b3' : '\u2715');
+  var el = document.createElement('div');
+  el.className = 'points-fly judgment-' + judgment;
+  el.textContent = mark + '\u3000+' + points + t('pointsSuffix');
+  screenEl.appendChild(el);
+  var cleanup = function(){ if (el.parentNode) el.parentNode.removeChild(el); };
+  el.addEventListener('animationend', cleanup);
+  setTimeout(cleanup, 1200); /* animationendが発火しない環境向けの保険 */
+}
+
+/* ヘッダー部のポイントバッジを現在のセッション累計に合わせて即時更新 */
+function updatePointsBadge(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  if (!screenEl) return;
+  var el = qs(screenEl, '[data-points-value]');
+  if (el) el.textContent = (currentSession ? currentSession.points : 0) + 'P';
 }
 
 /* 履歴1件(またはセッション進行中)の◯△✕件数とポイントを取得。
@@ -2626,6 +2689,7 @@ function renderModeScreen(type){
 
   qs(screenEl, '[data-streak-value]').textContent = rs.streak;
   qs(screenEl, '[data-question-num]').textContent = formatQuestionNumber(rs.questionNumber);
+  qs(screenEl, '[data-points-value]').textContent = (currentSession ? currentSession.points : 0) + 'P';
   qs(screenEl, '[data-reveal]').classList.remove('show');
 
   if (state.listenSubMode === 'survival'){
@@ -2708,6 +2772,8 @@ function handleUnlimitedOrSurvivalAnswer(type, judgment, value){
   var detail = { judgment: judgment, targetTempo: rs.tempo, userTempo: value, timestamp: Date.now() };
   if (isSurvival) detail.livesAfter = rs.lives;
   recordSessionDetail(type, detail);
+  spawnPointsFly(type, judgment, POINTS[judgment]);
+  updatePointsBadge(type);
 
   var gainedLife = false;
   if (isSurvival && !isWrong && rs.streak > 0 && rs.streak % 5 === 0){
@@ -2721,11 +2787,17 @@ function handleUnlimitedOrSurvivalAnswer(type, judgment, value){
 
   if (isSurvival){
     if (gainedLife){ triggerLifeGainAnimation(type); }
+    else if (isWrong){ triggerLifeLossAnimation(type); }
     else { renderLifeDisplay(type); }
   }
 
   if (isSurvival && rs.lives <= 0){
-    endSurvival(type);
+    if (isWrong){
+      /* 最後のハートが落ちる演出を見せてからゲームオーバー画面に切り替える */
+      setTimeout(function(){ endSurvival(type); }, 520);
+    } else {
+      endSurvival(type);
+    }
     return;
   }
 
@@ -2749,9 +2821,17 @@ function renderLifeDisplay(type){
   var el = qs(screenEl, '[data-life-display]');
   if (!el) return;
   var rs = roundState[type];
-  var hearts = '';
-  for (var i = 0; i < rs.lives; i++){ hearts += '\u2764'; }
-  el.textContent = hearts || '\u2013';
+  el.innerHTML = '';
+  if (rs.lives <= 0){
+    el.textContent = '\u2013';
+    return;
+  }
+  for (var i = 0; i < rs.lives; i++){
+    var heart = document.createElement('span');
+    heart.className = 'life-heart';
+    heart.textContent = '\u2764';
+    el.appendChild(heart);
+  }
 }
 
 function triggerLifeGainAnimation(type){
@@ -2765,6 +2845,18 @@ function triggerLifeGainAnimation(type){
     flying.remove();
     renderLifeDisplay(type);
   }, 2000);
+}
+
+/* ライフを失った瞬間、消える対象のハートをその場から真下に落として消す */
+function triggerLifeLossAnimation(type){
+  var screenEl = document.getElementById('screen-' + modeScreenId(type));
+  var el = qs(screenEl, '[data-life-display]');
+  if (!el){ renderLifeDisplay(type); return; }
+  var hearts = qsa(el, '.life-heart');
+  var target = hearts[hearts.length - 1]; /* 減る前の一番右のハートが消える対象 */
+  if (!target){ renderLifeDisplay(type); return; }
+  target.classList.add('life-lost');
+  setTimeout(function(){ renderLifeDisplay(type); }, 500);
 }
 
 function endSurvival(type){
@@ -2831,6 +2923,8 @@ function handleChallengeAnswer(type, judgment, value, btnEl){
 
   var remainingMs = Math.max(0, challenge60.endTime - performance.now());
   recordSessionDetail(type, { judgment: judgment, targetTempo: rs.tempo, userTempo: value, timeRemainingMs: Math.round(remainingMs), timestamp: Date.now() });
+  spawnPointsFly(type, judgment, POINTS[judgment]);
+  updatePointsBadge(type);
 
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
   if (type === 'select'){
@@ -3116,7 +3210,7 @@ function startObstructRound(){
   var rs = roundState.obstruct;
   rs.tempo = pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
-  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorChangeTimes = [];
+  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorSegments = [];
   rs.expectedTaps = rs.measures * 4;
   renderObstructScreen();
 }
@@ -3151,7 +3245,7 @@ function startObstructCountIn(){
   if (rs.phase === 'countin' || rs.phase === 'distracting') return;
 
   rs.expectedTaps = rs.measures * 4;
-  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorChangeTimes = [];
+  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorSegments = [];
   rs.phase = 'countin';
 
   var screenEl = document.getElementById('screen-mode5');
@@ -3241,7 +3335,7 @@ function finishObstructRound(){
   qs(screenEl, '[data-ob-avg-tempo]').textContent = formatTempo(Math.round(avg));
   qs(screenEl, '[data-ob-target-value]').textContent = formatTempo(rs.tempo);
 
-  var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes, rs.distractorChangeTimes);
+  var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes, rs.distractorSegments);
   qs(screenEl, '[data-ob-graph-container]').innerHTML = graphHtml;
   qs(screenEl, '[data-obstruct-result]').classList.add('show');
 
@@ -3254,7 +3348,7 @@ function finishObstructRound(){
     avgTempo: avg,
     tapTempos: rs.tempos.slice(),
     xTimes: rs.xTimes.slice(),
-    distractorChangeTimes: rs.distractorChangeTimes.slice(),
+    distractorSegments: rs.distractorSegments.slice(),
     measures: rs.measures
   });
 }
@@ -3272,7 +3366,7 @@ function startObstructDistractor(targetTempo, pulseEl){
   obstructPlayback.pulseEl = pulseEl || null;
   obstructPlayback.currentTempo = pickDistractorTempo(targetTempo);
   obstructPlayback.beatsAtCurrentTempo = 0;
-  rs.distractorChangeTimes = [Math.max(0, obstructPlayback.elapsedAtRef)];
+  rs.distractorSegments = [{ time: Math.max(0, obstructPlayback.elapsedAtRef), tempo: obstructPlayback.currentTempo }];
   scheduleObstructBatch(targetTempo);
 }
 
@@ -3287,7 +3381,7 @@ function scheduleObstructBatch(targetTempo){
       obstructPlayback.currentTempo = pickDistractorTempo(targetTempo);
       obstructPlayback.beatsAtCurrentTempo = 0;
       var elapsed = obstructPlayback.elapsedAtRef + (obstructPlayback.ctxTime - obstructPlayback.ctxTimeRef);
-      rs.distractorChangeTimes.push(elapsed);
+      rs.distractorSegments.push({ time: elapsed, tempo: obstructPlayback.currentTempo });
     }
     var tm = obstructPlayback.ctxTime;
     scheduleClick(ctx, tm, { accent: false });
@@ -3316,7 +3410,7 @@ function stopObstructAll(){
 /* ==================================================================
    グラフ描画 (SVG) — 自力タップ・テンポキープ・妨害で共用
    ================================================================== */
-function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorChangeTimes){
+function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorSegments){
   var width = 300, height = 176;
   var marginLeft = 34, marginRight = 14, marginTop = 16, marginBottom = 22;
   var plotW = width - marginLeft - marginRight;
@@ -3343,20 +3437,19 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorChangeTime
   var targetY = yScale(targetTempo);
 
   var bandRects = '';
-  if (distractorChangeTimes && distractorChangeTimes.length){
-    var points = [0];
-    distractorChangeTimes.forEach(function(v){
-      if (v > 0 && v < xMax && points.indexOf(v) === -1) points.push(v);
-    });
-    points.sort(function(a, b){ return a - b; });
-    for (var bi = 0; bi < points.length; bi++){
-      var xStart = points[bi];
-      var xEnd = bi + 1 < points.length ? points[bi + 1] : xMax;
+  var bandLabels = '';
+  if (distractorSegments && distractorSegments.length){
+    var segs = distractorSegments.filter(function(s){ return s.time < xMax; });
+    for (var bi = 0; bi < segs.length; bi++){
+      var xStart = Math.max(0, segs[bi].time);
+      var xEnd = bi + 1 < segs.length ? segs[bi + 1].time : xMax;
       if (xEnd <= xStart) continue;
       var rectX = xScale(xStart);
       var rectW = xScale(xEnd) - rectX;
       var bandClass = (bi % 2 === 0) ? 'graph-band-a' : 'graph-band-b';
       bandRects += '<rect x="' + rectX.toFixed(1) + '" y="' + marginTop + '" width="' + rectW.toFixed(1) + '" height="' + plotH + '" class="' + bandClass + '" />';
+      var labelX = rectX + rectW / 2;
+      bandLabels += '<text x="' + labelX.toFixed(1) + '" y="' + (marginTop + 10) + '" class="graph-band-label" text-anchor="middle">' + segs[bi].tempo + '</text>';
     }
   }
 
@@ -3406,6 +3499,7 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorChangeTime
     circles +
     pointLabels +
     yTickLabels +
+    bandLabels +
     '</svg>';
 }
 
@@ -3504,7 +3598,7 @@ function openGraphDetailModal(entry){
   summary.innerHTML =
     '<div class="stat"><span class="lbl">' + t('avgTempoLabel') + '</span><span class="val">' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
     '<div class="stat"><span class="lbl">' + t('targetTempoLabel') + '</span><span class="val">' + formatTempo(entry.targetTempo) + '</span></div>';
-  var graphHtml = buildTempoGraphSVG(entry.tapTempos, entry.targetTempo, entry.xTimes, entry.distractorChangeTimes);
+  var graphHtml = buildTempoGraphSVG(entry.tapTempos, entry.targetTempo, entry.xTimes, entry.distractorSegments);
   qs(backdrop, '[data-modal-graph]').innerHTML = graphHtml;
   backdrop.classList.add('show');
 }
@@ -3752,7 +3846,7 @@ function initEvents(){
         stopObstructAll();
         var rsOb = roundState.obstruct;
         rsOb.phase = 'idle';
-        rsOb.times = []; rsOb.tempos = []; rsOb.xTimes = []; rsOb.distractorChangeTimes = [];
+        rsOb.times = []; rsOb.tempos = []; rsOb.xTimes = []; rsOb.distractorSegments = [];
         renderObstructScreen();
         return;
       }
@@ -3939,14 +4033,47 @@ function updateInstallButtonVisibility(){
 }
 
 /* prefers-reduced-motionが有効な環境では振り子アニメーションを止める(SMILはCSSのanimation-play-stateでは制御できないため要素ごと除去する) */
+/* 振り子アニメーション: CSSアニメーション/SMILに頼らず、rAFでtransform属性を毎フレーム直接書き換える。
+   端末やブラウザのアニメーションエンジンの差異(Android環境で描画されない問題)を回避するための方式 */
 function initPendulumMotion(){
-  try {
-    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (reduceMotion){
-      var anim = document.querySelector('.pendulum .arm animateTransform');
-      if (anim) anim.remove();
+  var armEl = document.querySelector('.pendulum .arm');
+  if (!armEl) return;
+
+  var reduceMotion = false;
+  try { reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e){ /* matchMedia非対応環境では通常通りアニメーションする */ }
+  if (reduceMotion) return; /* 静止したまま(初期状態=角度0)にする */
+
+  var maxAngle = 18;
+  var periodMs = 4000; /* -18度→+18度→-18度の1往復にかかる時間 */
+  var startTs = null;
+  var rafId = null;
+
+  function frame(ts){
+    if (startTs === null) startTs = ts;
+    var angle = maxAngle * Math.sin((2 * Math.PI * (ts - startTs)) / periodMs);
+    armEl.setAttribute('transform', 'rotate(' + angle.toFixed(2) + ')');
+    rafId = requestAnimationFrame(frame);
+  }
+
+  function start(){
+    if (rafId === null){
+      startTs = null;
+      rafId = requestAnimationFrame(frame);
     }
-  } catch (e){ /* matchMedia非対応環境では何もしない */ }
+  }
+  function stop(){
+    if (rafId !== null){
+      cancelAnimationFrame(rafId);
+      rafId = null;
+    }
+  }
+
+  /* タブが非表示の間は止めてバッテリーを節約し、復帰時に再開する */
+  document.addEventListener('visibilitychange', function(){
+    if (document.hidden) stop(); else start();
+  });
+
+  start();
 }
 
 /* ==================================================================
@@ -3960,7 +4087,7 @@ function init(){
   applyTheme();
   renderSubModeSelector();
   updateInstallButtonVisibility();
-  initPendulumMotion();
+  try { initPendulumMotion(); } catch (e){ console.warn('pendulum init failed:', e); }
   initEvents();
 }
 
