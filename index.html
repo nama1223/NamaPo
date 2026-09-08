@@ -25,6 +25,8 @@
     --correct-text:#0F2419;
     --incorrect-bg:#E2897B;
     --incorrect-text:#3B140D;
+    --near-bg:#7FB8E0;
+    --near-text:#0A2740;
     --focus-ring:#8FD3FF;
     --danger:#E2897B;
     --font-display: ui-monospace, "SF Mono", "Cascadia Mono", "Roboto Mono", "Noto Sans Mono", monospace;
@@ -48,6 +50,8 @@
     --correct-text:#113822;
     --incorrect-bg:#F3C3B9;
     --incorrect-text:#5A1D12;
+    --near-bg:#BFE0F5;
+    --near-text:#0F3A5C;
     --focus-ring:#2E6F9E;
   }
   html.flash-active{ filter:invert(1); }
@@ -114,17 +118,6 @@
     flex-shrink:0;
   }
   .pendulum svg{ width:100%; height:100%; display:block; }
-  .pendulum .arm{
-    transform-origin:0 0;
-    animation:swing 2s ease-in-out infinite alternate;
-  }
-  @keyframes swing{
-    from{ transform:rotate(-18deg); }
-    to{ transform:rotate(18deg); }
-  }
-  @media (prefers-reduced-motion: reduce){
-    .pendulum .arm{ animation:none; }
-  }
   #btn-lang{
     padding:6px 12px;
     border:1px solid var(--border);
@@ -490,6 +483,11 @@
     border-color:var(--incorrect-bg);
   }
   .choice-btn.is-incorrect .num, .choice-btn.is-incorrect .unit{ color:var(--incorrect-text); }
+  .choice-btn.is-near{
+    background:var(--near-bg);
+    border-color:var(--near-bg);
+  }
+  .choice-btn.is-near .num, .choice-btn.is-near .unit{ color:var(--near-text); }
   .choice-btn:disabled{ opacity:1; }
   /* ---------- input mode ---------- */
   .input-row{
@@ -529,6 +527,7 @@
   }
   .btn-answer.is-correct{ background:var(--correct-bg); color:var(--correct-text); }
   .btn-answer.is-incorrect{ background:var(--incorrect-bg); color:var(--incorrect-text); }
+  .btn-answer.is-near{ background:var(--near-bg); color:var(--near-text); }
   /* ---------- reveal area ---------- */
   .reveal-box{
     display:none;
@@ -683,6 +682,8 @@
   }
   .tempo-graph{ width:100%; height:auto; display:block; }
   .graph-grid{ stroke:var(--border); stroke-width:1; }
+  .graph-band-a{ fill:var(--accent); opacity:0.08; }
+  .graph-band-b{ fill:var(--near-bg); opacity:0.12; }
   .graph-target-line{ stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; }
   .graph-target-label{ fill:var(--accent); font-size:9px; font-family:var(--font-display); }
   .graph-line{ stroke:var(--text); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
@@ -809,9 +810,32 @@
     font-weight:500;
     margin-left:6px;
   }
-  .count-correct{ color:var(--correct-bg); font-family:var(--font-display); font-weight:700; }
-  .count-incorrect{ color:var(--incorrect-bg); font-family:var(--font-display); font-weight:700; margin-left:8px; }
+  .count-points{ color:var(--accent); font-family:var(--font-display); font-weight:700; margin-right:8px; }
+  .count-o{ color:var(--correct-bg); font-family:var(--font-display); font-weight:700; }
+  .count-near{ color:var(--near-bg); font-family:var(--font-display); font-weight:700; margin-left:8px; }
+  .count-x{ color:var(--incorrect-bg); font-family:var(--font-display); font-weight:700; margin-left:8px; }
   .count-percent{ color:var(--text-muted); font-family:var(--font-display); font-weight:600; margin-left:8px; font-size:0.9em; }
+  .history-row-preview{
+    display:flex;
+    align-items:center;
+    gap:12px;
+    padding:10px 12px;
+    background:var(--bg-elevated-2);
+    border-radius:var(--radius-m);
+    width:100%;
+  }
+  .confirm-detail{ display:none; }
+  .modal-judgment-summary{
+    display:flex;
+    align-items:center;
+    flex-wrap:wrap;
+    gap:2px;
+    padding:12px;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    font-size:15px;
+  }
   .btn-detail{
     flex-shrink:0;
     padding:8px 12px;
@@ -865,6 +889,7 @@
   }
   .detail-log-row .log-mark.correct{ color:var(--correct-bg); }
   .detail-log-row .log-mark.incorrect{ color:var(--incorrect-bg); }
+  .detail-log-row .log-mark.near{ color:var(--near-bg); }
   .detail-log-row .log-values{
     font-family:var(--font-display);
     font-weight:600;
@@ -1084,6 +1109,113 @@
     background:var(--incorrect-bg);
     color:var(--incorrect-text);
   }
+  /* ---------- tempo list editor modal ---------- */
+  #tempolist-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:120;
+  }
+  #tempolist-backdrop.show{ display:flex; }
+  #tempolist-box{
+    width:100%;
+    max-width:420px;
+    max-height:85vh;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-l);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow:hidden;
+  }
+  .tempolist-items{
+    display:flex;
+    flex-wrap:wrap;
+    align-content:flex-start;
+    gap:8px;
+    overflow-y:auto;
+    max-height:38vh;
+    padding:2px;
+  }
+  .tempolist-item{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding:7px 6px 7px 12px;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:999px;
+  }
+  .tempolist-item .tempolist-value{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:14px;
+  }
+  .btn-tempolist-remove{
+    width:22px;
+    height:22px;
+    border-radius:50%;
+    background:transparent;
+    color:var(--incorrect-bg);
+    font-size:11px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-shrink:0;
+  }
+  .btn-tempolist-remove:disabled{ opacity:0.25; }
+  .tempolist-add-row{
+    display:flex;
+    gap:8px;
+    align-items:center;
+  }
+  .tempolist-add-row input{
+    flex:1;
+    padding:10px 8px;
+    text-align:center;
+    font-family:var(--font-display);
+    font-size:16px;
+    font-weight:700;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-s);
+  }
+  .tempolist-add-row input::-webkit-outer-spin-button,
+  .tempolist-add-row input::-webkit-inner-spin-button{
+    -webkit-appearance:none;
+    margin:0;
+  }
+  .btn-tempolist-add{
+    padding:10px 18px;
+    border-radius:var(--radius-s);
+    background:var(--accent);
+    color:var(--correct-text);
+    font-weight:700;
+    font-size:14px;
+    flex-shrink:0;
+  }
+  .tempolist-error{
+    font-size:12px;
+    color:var(--incorrect-bg);
+    min-height:14px;
+    text-align:center;
+  }
+  .btn-tempolist-resetbtn{
+    width:100%;
+    padding:11px 6px;
+    border-radius:var(--radius-m);
+    font-size:13px;
+    font-weight:600;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+  }
 </style>
 </head>
 <body>
@@ -1096,6 +1228,7 @@
           <line x1="2" y1="22" x2="18" y2="22" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
           <g transform="translate(10,22)">
             <g class="arm">
+              <animateTransform attributeName="transform" type="rotate" values="-18;18;-18" keyTimes="0;0.5;1" calcMode="spline" keySplines="0.42 0 0.58 1;0.42 0 0.58 1" dur="2s" repeatCount="indefinite"/>
               <line x1="0" y1="0" x2="0" y2="-18" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
               <circle cx="0" cy="-18" r="3" fill="var(--accent)"/>
             </g>
@@ -1143,6 +1276,10 @@
           <button class="menu-btn primary" data-nav="mode4" type="button">
             <span class="menu-icon">◎</span>
             <span data-i18n="menuModeTempoKeep"></span>
+          </button>
+          <button class="menu-btn primary" data-nav="mode5" type="button">
+            <span class="menu-icon">∿</span>
+            <span data-i18n="menuModeObstruct"></span>
           </button>
         </div>
 
@@ -1355,6 +1492,56 @@
       </div>
     </section>
 
+    <!-- ============ MODE 5 : 妨害 ============ -->
+    <section id="screen-mode5" class="screen" data-mode="obstruct">
+      <div class="mode-header">
+        <div class="mode-title" data-i18n="menuModeObstruct"></div>
+      </div>
+      <div class="reroll-row">
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+      </div>
+      <div class="target-display">
+        <div class="reveal-label" data-i18n="targetTempoLabel"></div>
+        <div class="big-num"><span data-ob-target-main>--</span></div>
+      </div>
+      <div class="mode-prompt" data-i18n="promptObstruct"></div>
+      <div class="measures-row">
+        <label class="row-label" data-i18n="measuresLabel" for="input-measures-obstruct"></label>
+        <input id="input-measures-obstruct" type="number" inputmode="numeric" min="1" max="16" value="2">
+      </div>
+      <div class="measures-row">
+        <label class="row-label" data-i18n="tempoKeepTapSoundLabel" for="toggle-obstruct-tapsound"></label>
+        <input id="toggle-obstruct-tapsound" type="checkbox" class="settings-checkbox" checked>
+      </div>
+      <div class="tk-action-wrap">
+        <button id="btn-obstruct-action" class="btn-tap-action tk-tall" type="button">
+          <span data-ob-action-label></span>
+        </button>
+        <div class="tap-progress"><span data-obstruct-progress>0 / 8</span></div>
+      </div>
+      <div class="tap-result" data-obstruct-result>
+        <div class="tap-summary">
+          <div class="stat">
+            <span class="lbl" data-i18n="avgTempoLabel"></span>
+            <span class="val" data-ob-avg-tempo>--</span>
+          </div>
+          <div class="stat">
+            <span class="lbl" data-i18n="targetTempoLabel"></span>
+            <span class="val" data-ob-target-value>--</span>
+          </div>
+        </div>
+        <div class="graph-box" data-ob-graph-container></div>
+        <div class="tap-result-actions">
+          <button class="btn-retry" data-action="retry-obstruct" type="button" data-i18n="btnRetryTap"></button>
+          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+          <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
+        </div>
+      </div>
+      <div class="mode-footer">
+        <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
+      </div>
+    </section>
+
     <!-- ============ HISTORY ============ -->
     <section id="screen-history" class="screen" data-mode="history">
       <div class="mode-header">
@@ -1367,6 +1554,7 @@
         <button class="filter-btn" data-filter="input" type="button" data-i18n="menuModeInput"></button>
         <button class="filter-btn" data-filter="tap" type="button" data-i18n="menuModeTap"></button>
         <button class="filter-btn" data-filter="tempokeep" type="button" data-i18n="menuModeTempoKeep"></button>
+        <button class="filter-btn" data-filter="obstruct" type="button" data-i18n="menuModeObstruct"></button>
       </div>
       <div class="history-list" data-history-list></div>
       <div class="mode-footer">
@@ -1378,6 +1566,7 @@
     <section id="screen-settings" class="screen" data-mode="settings">
       <div class="mode-header">
         <div class="mode-title" data-i18n="menuSettings"></div>
+        <button class="btn-back-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
       </div>
 
       <button id="btn-pwa-install" class="btn-pwa-install" type="button" data-i18n="btnPwaInstall"></button>
@@ -1442,6 +1631,19 @@
       </div>
 
       <div class="settings-group">
+        <div class="settings-group-title" data-i18n="settingsTempoListGroup"></div>
+        <div class="settings-card">
+          <div class="settings-row" style="border-top:none;">
+            <div>
+              <div class="row-label" data-i18n="settingsTempoListGroup"></div>
+              <div class="row-desc" data-i18n="settingsTempoListDesc"></div>
+            </div>
+            <button id="btn-edit-tempolist" class="btn-test-play" type="button"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="settings-group">
         <div class="settings-group-title" data-i18n="settingsDataGroup"></div>
         <div class="settings-card">
           <button class="btn-danger" data-action="clear-history" type="button" data-i18n="settingsClearHistory"></button>
@@ -1450,7 +1652,7 @@
 
       <div class="mode-footer">
         <button class="btn-back-top" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
-        <div class="version-tag"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer v2.1</div>
+        <div class="version-tag"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer v2.2</div>
       </div>
     </section>
 
@@ -1471,10 +1673,27 @@
 <div id="confirm-backdrop">
   <div id="confirm-box" role="dialog" aria-modal="true">
     <div class="confirm-message" data-confirm-message></div>
+    <div class="confirm-detail" data-confirm-detail></div>
     <div class="confirm-actions">
       <button id="btn-confirm-cancel" class="btn-confirm-cancel" type="button" data-i18n="btnCancel"></button>
       <button id="btn-confirm-ok" class="btn-confirm-danger" type="button" data-i18n="btnConfirmClear"></button>
     </div>
+  </div>
+</div>
+
+<div id="tempolist-backdrop">
+  <div id="tempolist-box" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title" data-i18n="settingsTempoListGroup"></div>
+      <button id="btn-tempolist-close" type="button" aria-label="close">✕</button>
+    </div>
+    <div class="tempolist-items" data-tempolist-items></div>
+    <div class="tempolist-add-row">
+      <input id="input-tempolist-new" type="number" inputmode="numeric" min="20" max="400" placeholder="BPM">
+      <button id="btn-tempolist-add" class="btn-tempolist-add" type="button" data-i18n="btnTempoListAdd"></button>
+    </div>
+    <div class="tempolist-error" data-tempolist-error></div>
+    <button id="btn-tempolist-reset" class="btn-tempolist-resetbtn" type="button" data-i18n="btnTempoListReset"></button>
   </div>
 </div>
 
@@ -1484,7 +1703,13 @@
 /* ==================================================================
    定数
    ================================================================== */
-var TEMPO_LIST = [40,46,52,56,60,66,72,80,88,96,104,112,120,126,132,138,144,152,160,168,176,184,208];
+var DEFAULT_TEMPO_LIST = [40,46,52,56,60,66,72,80,88,96,104,112,120,126,132,138,144,152,160,168,176,184,208];
+/* お題テンポリスト。設定画面から編集可能で、localStorageに保存される(未設定時はDEFAULT_TEMPO_LISTを使用) */
+var TEMPO_LIST = DEFAULT_TEMPO_LIST.slice();
+var MIN_TEMPO_LIST_LENGTH = 4;
+
+/* 採点方式: ◯(正解)/△(隣接テンポ)/✕(それ以外)の獲得ポイント */
+var POINTS = { correct: 8, near: 3, wrong: 1 };
 
 var DIFFICULTY_WINDOW = { easy: 6, normal: 3, hard: 1 };
 
@@ -1494,6 +1719,7 @@ var I18N = {
     menuModeInput: '入力モード',
     menuModeTap: '自力タップ',
     menuModeTempoKeep: 'テンポキープ',
+    menuModeObstruct: '妨害',
     menuHistory: '履歴',
     menuSettings: '設定',
     categoryListening: '聴き取りトレーニング',
@@ -1518,12 +1744,11 @@ var I18N = {
     tempoKeepTapSoundLabel: '自分のタップ音',
     tempoKeepPlayCaption: 'タップで4拍のお手本を再生',
     promptTempoKeep: '再生ボタンで4拍のお手本を聞いたら、無音になってもそのままタップし続けてテンポをキープしましょう',
+    promptObstruct: 'お手本のあとに違うテンポの音が鳴り続けても、惑わされずにお題のテンポでタップし続けましょう',
     challengeIntro: '60秒以内の正答数にチャレンジ！',
     btnChallengeStart: 'スタート',
     resultGameOver: 'ゲームオーバー',
     resultTimeUp: 'タイムアップ',
-    resultCorrectCount: '正答',
-    resultIncorrectCount: '誤答',
     lifeCountLabel: '残りライフ',
     remainingLabel: '残り',
     secondsUnit: '秒',
@@ -1546,6 +1771,14 @@ var I18N = {
     difficultyEasy: 'やさしい',
     difficultyNormal: 'ふつう',
     difficultyHard: 'むずかしい',
+    settingsTempoListGroup: 'お題テンポリスト',
+    settingsTempoListDesc: '出題されるテンポの一覧です。編集で追加・削除ができます。',
+    btnEditTempoList: '編集',
+    btnTempoListAdd: '追加',
+    btnTempoListReset: '初期状態に戻す',
+    tempoListErrRange: '20〜400の範囲の整数を入力してください',
+    tempoListErrDup: 'そのテンポはすでにリストにあります',
+    confirmResetTempoList: 'お題テンポリストを初期状態に戻します。よろしいですか？',
     settingsDataGroup: 'データ',
     settingsClearHistory: '履歴をすべて消去',
     btnTestPlay: '試聴',
@@ -1559,10 +1792,10 @@ var I18N = {
     modeLabelInput: '入力モード',
     modeLabelTap: '自力タップ',
     modeLabelTempoKeep: 'テンポキープ',
+    modeLabelObstruct: '妨害',
     detailBtn: '詳細',
     confirmClearHistory: '履歴をすべて消去します。よろしいですか？',
     confirmDeleteEntry: 'この記録を削除します。よろしいですか？',
-    percentCorrectLabel: '正答率',
     btnCancel: 'キャンセル',
     btnConfirmClear: '消去する',
     btnPwaInstall: '\ud83d\udcf2 アプリとしてインストール',
@@ -1578,6 +1811,7 @@ var I18N = {
     menuModeInput: 'Input Mode',
     menuModeTap: 'Self-Paced Tap',
     menuModeTempoKeep: 'Tempo Keep',
+    menuModeObstruct: 'Interference',
     menuHistory: 'History',
     menuSettings: 'Settings',
     categoryListening: 'Listening Training',
@@ -1602,12 +1836,11 @@ var I18N = {
     tempoKeepTapSoundLabel: 'My tap sound',
     tempoKeepPlayCaption: 'Tap to play a 4-beat example',
     promptTempoKeep: 'Play the 4-beat example, then keep tapping the same tempo once it goes silent',
+    promptObstruct: "After the example, a different tempo keeps playing — don't be thrown off, keep tapping the target tempo",
     challengeIntro: 'Challenge: how many can you get right in 60 seconds?',
     btnChallengeStart: 'Start',
     resultGameOver: 'Game Over',
     resultTimeUp: "Time's Up",
-    resultCorrectCount: 'Correct',
-    resultIncorrectCount: 'Wrong',
     lifeCountLabel: 'Lives left',
     remainingLabel: 'Remaining',
     secondsUnit: 's',
@@ -1630,6 +1863,14 @@ var I18N = {
     difficultyEasy: 'Easy',
     difficultyNormal: 'Normal',
     difficultyHard: 'Hard',
+    settingsTempoListGroup: 'Target Tempo List',
+    settingsTempoListDesc: 'The tempos used as quiz targets. Add or remove them below.',
+    btnEditTempoList: 'Edit',
+    btnTempoListAdd: 'Add',
+    btnTempoListReset: 'Reset to Default',
+    tempoListErrRange: 'Enter a whole number between 20 and 400',
+    tempoListErrDup: 'That tempo is already in the list',
+    confirmResetTempoList: 'Reset the tempo list to its defaults. Continue?',
     settingsDataGroup: 'Data',
     settingsClearHistory: 'Clear all history',
     btnTestPlay: 'Play',
@@ -1643,10 +1884,10 @@ var I18N = {
     modeLabelInput: 'Input',
     modeLabelTap: 'Self-Paced Tap',
     modeLabelTempoKeep: 'Tempo Keep',
+    modeLabelObstruct: 'Interference',
     detailBtn: 'Detail',
     confirmClearHistory: 'This will clear all history. Continue?',
     confirmDeleteEntry: 'Delete this entry?',
-    percentCorrectLabel: 'Accuracy',
     btnCancel: 'Cancel',
     btnConfirmClear: 'Clear',
     btnPwaInstall: '\ud83d\udcf2 Install as an app',
@@ -1683,10 +1924,11 @@ var state = {
 
 /* モードごとの進行中データ */
 var roundState = {
-  select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0, questionNumber: 1 },
-  input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, correctCount: 0, incorrectCount: 0, questionNumber: 1 },
+  select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, questionNumber: 1 },
+  input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, questionNumber: 1 },
   tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
-  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 }
+  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 },
+  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorChangeTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null }
 };
 
 /* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
@@ -1697,6 +1939,9 @@ var challenge60 = { active: false, endTime: 0, tickIntervalId: null };
 
 /* 連続再生スケジューラ(60秒チャレンジ用) */
 var continuousPlayback = { active: false, ctxTime: 0, interval: 0, batchTimeoutId: null, pulseEl: null };
+
+/* 妨害モード用の連続再生スケジューラ(2拍ごとにテンポが変わる) */
+var obstructPlayback = { active: false, ctxTime: 0, currentTempo: 0, beatsAtCurrentTempo: 0, batchTimeoutId: null, pulseEl: null };
 
 /* PWAインストールボタン用の状態 */
 var deferredInstallPrompt = null;
@@ -1764,6 +2009,29 @@ function loadSettingsFromStorage(){
   } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
 }
 
+var STORAGE_KEY_TEMPOLIST = 'namatempotrainer_tempolist_v1';
+
+function saveTempoListToStorage(){
+  try {
+    localStorage.setItem(STORAGE_KEY_TEMPOLIST, JSON.stringify(TEMPO_LIST));
+  } catch (e){ /* ストレージ不可の環境では何もしない */ }
+}
+
+function loadTempoListFromStorage(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_TEMPOLIST);
+    if (raw){
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)){
+        var cleaned = parsed.filter(function(v){ return typeof v === 'number' && isFinite(v) && v >= 20 && v <= 400; });
+        cleaned = cleaned.filter(function(v, i){ return cleaned.indexOf(v) === i; });
+        cleaned.sort(function(a, b){ return a - b; });
+        if (cleaned.length >= MIN_TEMPO_LIST_LENGTH) TEMPO_LIST = cleaned;
+      }
+    }
+  } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
+}
+
 /* ==================================================================
    ユーティリティ
    ================================================================== */
@@ -1790,7 +2058,121 @@ function shuffleArray(arr){
 }
 
 function formatTempo(n){
-  return '\u2669 = ' + n;
+  return '\u2669=' + n;
+}
+
+/* ---- 採点判定 (◯正解 / △隣接 / ✕それ以外) ---- */
+function getTempoNeighborBounds(tempo){
+  var idx = TEMPO_LIST.indexOf(tempo);
+  return {
+    lower: idx > 0 ? TEMPO_LIST[idx - 1] : null,
+    upper: (idx >= 0 && idx < TEMPO_LIST.length - 1) ? TEMPO_LIST[idx + 1] : null
+  };
+}
+
+function judgeAnswer(target, value){
+  if (value === target) return 'correct';
+  var bounds = getTempoNeighborBounds(target);
+  if (bounds.lower !== null && value >= bounds.lower && value < target) return 'near';
+  if (bounds.upper !== null && value <= bounds.upper && value > target) return 'near';
+  return 'wrong';
+}
+
+function judgmentClass(judgment){
+  return judgment === 'correct' ? 'is-correct' : (judgment === 'near' ? 'is-near' : 'is-incorrect');
+}
+
+/* 履歴1件(またはセッション進行中)の◯△✕件数とポイントを取得。
+   新形式はセッション側で集計済みの値をそのまま使い、旧形式はdetails(またはcorrectCount/incorrectCount)から復元する */
+function getEntryStats(entry){
+  if (typeof entry.points === 'number' && typeof entry.oCount === 'number'){
+    return { o: entry.oCount, near: entry.nearCount || 0, x: entry.xCount || 0, points: entry.points };
+  }
+  var o = 0, near = 0, x = 0;
+  if (entry.details && entry.details.length){
+    entry.details.forEach(function(d){
+      if (d.kind === 'lifegain') return;
+      var j = d.judgment || (d.correct === true ? 'correct' : (d.correct === false ? 'wrong' : null));
+      if (j === 'correct') o++;
+      else if (j === 'near') near++;
+      else if (j === 'wrong') x++;
+    });
+  } else {
+    o = entry.correctCount || 0;
+    x = entry.incorrectCount || 0;
+  }
+  var points = o * POINTS.correct + near * POINTS.near + x * POINTS.wrong;
+  return { o: o, near: near, x: x, points: points };
+}
+
+function judgmentPercents(stats){
+  var total = stats.o + stats.near + stats.x;
+  return {
+    total: total,
+    pctStrict: total > 0 ? Math.round((stats.o / total) * 100) : 0,
+    pctLenient: total > 0 ? Math.round(((stats.o + stats.near) / total) * 100) : 0
+  };
+}
+
+function buildJudgmentSummaryHtml(stats){
+  var pct = judgmentPercents(stats);
+  return '<span class="count-points">' + stats.points + 'P</span>' +
+    '<span class="count-o">\u25cb ' + stats.o + '</span>' +
+    '<span class="count-near">\u25b3 ' + stats.near + '</span>' +
+    '<span class="count-x">\u2715 ' + stats.x + '</span>' +
+    '<span class="count-percent">' + pct.pctStrict + '%/' + pct.pctLenient + '%</span>';
+}
+
+/* ---- お題テンポリストのカスタム編集 ---- */
+function addCustomTempo(rawValue){
+  var value = Math.round(rawValue);
+  if (isNaN(value) || value < 20 || value > 400) return { ok: false, reason: 'range' };
+  if (TEMPO_LIST.indexOf(value) !== -1) return { ok: false, reason: 'dup' };
+  TEMPO_LIST = TEMPO_LIST.concat([value]).sort(function(a, b){ return a - b; });
+  saveTempoListToStorage();
+  return { ok: true };
+}
+
+function removeCustomTempo(value){
+  if (TEMPO_LIST.length <= MIN_TEMPO_LIST_LENGTH) return { ok: false, reason: 'min' };
+  TEMPO_LIST = TEMPO_LIST.filter(function(v){ return v !== value; });
+  saveTempoListToStorage();
+  return { ok: true };
+}
+
+function resetTempoListToDefault(){
+  TEMPO_LIST = DEFAULT_TEMPO_LIST.slice();
+  saveTempoListToStorage();
+}
+
+/* 妨害モード: お題テンポの隣接テンポ範囲内(お題±2は除く)からランダムに1つ選ぶ。
+   範囲が定義できない場合(隣接テンポが無いなど)はお題から十分離れた値にフォールバックする */
+function pickDistractorTempo(target){
+  var bounds = getTempoNeighborBounds(target);
+  var ranges = [];
+  if (bounds.lower !== null){
+    var lowHigh = target - 3;
+    if (lowHigh >= bounds.lower) ranges.push([bounds.lower, lowHigh]);
+  }
+  if (bounds.upper !== null){
+    var highLow = target + 3;
+    if (highLow <= bounds.upper) ranges.push([highLow, bounds.upper]);
+  }
+  if (ranges.length === 0){
+    var fallbackLow = Math.max(20, target - 30);
+    var fallbackHigh = Math.min(400, target + 30);
+    var v;
+    do { v = fallbackLow + Math.floor(Math.random() * (fallbackHigh - fallbackLow + 1)); } while (Math.abs(v - target) < 3);
+    return v;
+  }
+  var totalWidth = ranges.reduce(function(sum, r){ return sum + (r[1] - r[0] + 1); }, 0);
+  var pick = Math.floor(Math.random() * totalWidth);
+  for (var i = 0; i < ranges.length; i++){
+    var width = ranges[i][1] - ranges[i][0] + 1;
+    if (pick < width) return ranges[i][0] + pick;
+    pick -= width;
+  }
+  return ranges[0][0];
 }
 
 function formatQuestionNumber(n){
@@ -1833,6 +2215,7 @@ function refreshDynamicForScreen(){
     qs(document.getElementById('screen-mode2'), '[data-question-num]').textContent = formatQuestionNumber(roundState.input.questionNumber);
     if (roundState.input.uiState === 'revealed'){ renderRevealText('mode2'); }
   }
+  if (state.screen === 'settings'){ renderSettingsUI(); }
 }
 
 /* ==================================================================
@@ -1841,6 +2224,7 @@ function refreshDynamicForScreen(){
 function showScreen(name){
   stopAllScheduledAudio();
   stopContinuousPlayback();
+  stopObstructAll();
   if (challenge60.tickIntervalId){ clearInterval(challenge60.tickIntervalId); challenge60.tickIntervalId = null; }
   if (state.testPlaying){
     state.testPlaying = false;
@@ -1860,6 +2244,7 @@ function showScreen(name){
   if (name === 'mode2'){ startNewSession('input', state.listenSubMode); enterListenMode('input'); }
   if (name === 'mode3') startTapRound();
   if (name === 'mode4') startTempoKeepRound();
+  if (name === 'mode5') startObstructRound();
   if (name === 'history') renderHistoryList();
   if (name === 'settings') renderSettingsUI();
 }
@@ -1867,8 +2252,6 @@ function showScreen(name){
 function enterListenMode(type){
   var rs = roundState[type];
   rs.streak = 0;
-  rs.correctCount = 0;
-  rs.incorrectCount = 0;
   rs.lives = 3;
   rs.questionNumber = 1;
   if (state.listenSubMode === 'challenge60'){
@@ -1889,8 +2272,10 @@ function startNewSession(type, subMode){
     type: type,
     subMode: subMode,
     timestamp: Date.now(),
-    correctCount: 0,
-    incorrectCount: 0,
+    oCount: 0,
+    nearCount: 0,
+    xCount: 0,
+    points: 0,
     details: []
   };
 }
@@ -1906,8 +2291,9 @@ function commitCurrentSession(){
 function recordSessionDetail(type, detail){
   if (!currentSession) return;
   currentSession.details.push(detail);
-  if (detail.correct === true) currentSession.correctCount++;
-  else if (detail.correct === false) currentSession.incorrectCount++;
+  if (detail.judgment === 'correct'){ currentSession.oCount++; currentSession.points += POINTS.correct; }
+  else if (detail.judgment === 'near'){ currentSession.nearCount++; currentSession.points += POINTS.near; }
+  else if (detail.judgment === 'wrong'){ currentSession.xCount++; currentSession.points += POINTS.wrong; }
 }
 
 /* ==================================================================
@@ -1987,19 +2373,33 @@ function scheduleClick(ctx, time, opts){
 function playCorrectSfx(){
   var ctx = ensureAudioContext();
   var t0 = ctx.currentTime;
-  [1568, 2093].forEach(function(freq, i){
+  /* C6-E6-G6-B6-E7 の5音アルペジオ。各音に1オクターブ上の倍音を薄く重ねて華やかさを出す */
+  [1046.5, 1318.5, 1568, 1975.5, 2637].forEach(function(freq, i){
+    var start = t0 + i * 0.06;
+
     var osc = ctx.createOscillator();
     var gain = ctx.createGain();
     osc.type = 'sine';
     osc.frequency.value = freq;
     osc.connect(gain).connect(ctx.destination);
-    var start = t0 + i * 0.07;
     gain.gain.setValueAtTime(0.0001, start);
     gain.gain.exponentialRampToValueAtTime(0.5 * state.settings.clickVolume + 0.001, start + 0.01);
-    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.32);
     osc.start(start);
-    osc.stop(start + 0.2);
+    osc.stop(start + 0.34);
     trackNode(osc);
+
+    var oscHi = ctx.createOscillator();
+    var gainHi = ctx.createGain();
+    oscHi.type = 'sine';
+    oscHi.frequency.value = freq * 2;
+    oscHi.connect(gainHi).connect(ctx.destination);
+    gainHi.gain.setValueAtTime(0.0001, start);
+    gainHi.gain.exponentialRampToValueAtTime(0.18 * state.settings.clickVolume + 0.0005, start + 0.01);
+    gainHi.gain.exponentialRampToValueAtTime(0.0001, start + 0.24);
+    oscHi.start(start);
+    oscHi.stop(start + 0.26);
+    trackNode(oscHi);
   });
 }
 
@@ -2017,6 +2417,26 @@ function playIncorrectSfx(){
   osc.start(t0);
   osc.stop(t0 + 0.3);
   trackNode(osc);
+}
+
+/* △(隣接テンポ)用のフィードバック音: 従来◯で使っていた2音構成をそのまま転用 */
+function playNearSfx(){
+  var ctx = ensureAudioContext();
+  var t0 = ctx.currentTime;
+  [1568, 2093].forEach(function(freq, i){
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc.connect(gain).connect(ctx.destination);
+    var start = t0 + i * 0.07;
+    gain.gain.setValueAtTime(0.0001, start);
+    gain.gain.exponentialRampToValueAtTime(0.5 * state.settings.clickVolume + 0.001, start + 0.01);
+    gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.18);
+    osc.start(start);
+    osc.stop(start + 0.2);
+    trackNode(osc);
+  });
 }
 
 /* ---- フラッシュ / バイブ (音を出せない環境向けのビート通知) ---- */
@@ -2238,15 +2658,15 @@ function renderModeScreen(type){
 
 function onSelectAnswer(value, btnEl){
   var rs = roundState.select;
+  var judgment = judgeAnswer(rs.tempo, value);
   if (state.listenSubMode === 'challenge60'){
-    handleChallengeAnswer('select', value === rs.tempo, value, btnEl);
+    handleChallengeAnswer('select', judgment, value, btnEl);
     return;
   }
   if (rs.uiState !== 'ready') return;
-  var correct = (value === rs.tempo);
-  btnEl.classList.add(correct ? 'is-correct' : 'is-incorrect');
+  btnEl.classList.add(judgmentClass(judgment));
   qsa(btnEl.parentElement, '.choice-btn').forEach(function(b){ b.disabled = true; });
-  handleUnlimitedOrSurvivalAnswer('select', correct, value);
+  handleUnlimitedOrSurvivalAnswer('select', judgment, value);
 }
 
 function onInputAnswer(){
@@ -2255,39 +2675,42 @@ function onInputAnswer(){
   var input = qs(screenEl, '#input-tempo');
   var value = parseInt(input.value, 10);
   if (isNaN(value)) return;
-  var correct = (value === rs.tempo);
+  var judgment = judgeAnswer(rs.tempo, value);
 
   if (state.listenSubMode === 'challenge60'){
-    handleChallengeAnswer('input', correct, value, null);
+    handleChallengeAnswer('input', judgment, value, null);
     return;
   }
   if (rs.uiState !== 'ready') return;
 
   var answerBtn = qs(screenEl, '.btn-answer');
-  answerBtn.classList.add(correct ? 'is-correct' : 'is-incorrect');
+  answerBtn.classList.add(judgmentClass(judgment));
   input.disabled = true;
-  handleUnlimitedOrSurvivalAnswer('input', correct, value);
+  handleUnlimitedOrSurvivalAnswer('input', judgment, value);
 }
 
-function handleUnlimitedOrSurvivalAnswer(type, correct, value){
+function handleUnlimitedOrSurvivalAnswer(type, judgment, value){
   var rs = roundState[type];
   var isSurvival = (state.listenSubMode === 'survival');
+  var isWrong = (judgment === 'wrong');
 
   stopAllScheduledAudio();
-  if (correct){ playCorrectSfx(); } else { playIncorrectSfx(); }
+  if (judgment === 'correct'){ playCorrectSfx(); }
+  else if (judgment === 'near'){ playNearSfx(); }
+  else { playIncorrectSfx(); }
 
-  rs.streak = correct ? rs.streak + 1 : 0;
+  rs.streak = isWrong ? 0 : rs.streak + 1;
 
-  if (isSurvival && !correct){
+  if (isSurvival && isWrong){
     rs.lives = Math.max(0, rs.lives - 1);
   }
 
-  var detail = { correct: correct, targetTempo: rs.tempo, userTempo: value, timestamp: Date.now() };
+  var detail = { judgment: judgment, targetTempo: rs.tempo, userTempo: value, timestamp: Date.now() };
   if (isSurvival) detail.livesAfter = rs.lives;
   recordSessionDetail(type, detail);
 
   var gainedLife = false;
-  if (isSurvival && correct && rs.streak > 0 && rs.streak % 5 === 0){
+  if (isSurvival && !isWrong && rs.streak > 0 && rs.streak % 5 === 0){
     rs.lives += 1;
     gainedLife = true;
     recordSessionDetail(type, { kind: 'lifegain', livesAfter: rs.lives, timestamp: Date.now() });
@@ -2359,15 +2782,9 @@ function renderResultPanel(type, kind){
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
   var titleEl = qs(screenEl, '[data-result-title]');
   var statsEl = qs(screenEl, '[data-result-stats]');
-  var correctCount = currentSession ? currentSession.correctCount : 0;
-  var incorrectCount = currentSession ? currentSession.incorrectCount : 0;
-  if (kind === 'gameover'){
-    titleEl.textContent = t('resultGameOver');
-    statsEl.textContent = t('resultCorrectCount') + ' ' + correctCount;
-  } else {
-    titleEl.textContent = t('resultTimeUp');
-    statsEl.textContent = t('resultCorrectCount') + ' ' + correctCount + '  /  ' + t('resultIncorrectCount') + ' ' + incorrectCount;
-  }
+  var stats = currentSession ? getEntryStats(currentSession) : { o: 0, near: 0, x: 0, points: 0 };
+  titleEl.textContent = (kind === 'gameover') ? t('resultGameOver') : t('resultTimeUp');
+  statsEl.innerHTML = buildJudgmentSummaryHtml(stats);
 }
 
 /* ---- 60秒チャレンジ ---- */
@@ -2403,27 +2820,29 @@ function updateChallengeTimer(type){
   if (el) el.textContent = (remaining / 1000).toFixed(3);
 }
 
-function handleChallengeAnswer(type, correct, value, btnEl){
+function handleChallengeAnswer(type, judgment, value, btnEl){
   var rs = roundState[type];
   if (rs.uiState !== 'playing') return;
   stopContinuousPlayback();
 
-  if (correct){ playCorrectSfx(); } else { playIncorrectSfx(); }
+  if (judgment === 'correct'){ playCorrectSfx(); }
+  else if (judgment === 'near'){ playNearSfx(); }
+  else { playIncorrectSfx(); }
 
   var remainingMs = Math.max(0, challenge60.endTime - performance.now());
-  recordSessionDetail(type, { correct: correct, targetTempo: rs.tempo, userTempo: value, timeRemainingMs: Math.round(remainingMs), timestamp: Date.now() });
+  recordSessionDetail(type, { judgment: judgment, targetTempo: rs.tempo, userTempo: value, timeRemainingMs: Math.round(remainingMs), timestamp: Date.now() });
 
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
   if (type === 'select'){
     qsa(screenEl, '.choice-btn').forEach(function(b){
       b.disabled = true;
-      if (!correct && parseInt(b.getAttribute('data-value'), 10) === rs.tempo){
+      if (judgment !== 'correct' && parseInt(b.getAttribute('data-value'), 10) === rs.tempo){
         b.classList.add('is-correct');
       }
     });
-    if (btnEl) btnEl.classList.add(correct ? 'is-correct' : 'is-incorrect');
+    if (btnEl) btnEl.classList.add(judgmentClass(judgment));
   } else {
-    qs(screenEl, '.btn-answer').classList.add(correct ? 'is-correct' : 'is-incorrect');
+    qs(screenEl, '.btn-answer').classList.add(judgmentClass(judgment));
     qs(screenEl, '#input-tempo').disabled = true;
   }
 
@@ -2689,9 +3108,215 @@ function finishTempoKeepRound(){
 }
 
 /* ==================================================================
-   グラフ描画 (SVG) — 自力タップ・テンポキープで共用
+   モード5 : 妨害 (基本仕様はテンポキープに準じる。お手本4拍のあとは無音にならず、
+   お題とは違うテンポの音が2拍ごとに変わりながら鳴り続け、プレイヤーのテンポ感覚を惑わす)
    ================================================================== */
-function buildTempoGraphSVG(tapTempos, targetTempo, xTimes){
+function startObstructRound(){
+  stopObstructAll();
+  var rs = roundState.obstruct;
+  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.phase = 'idle';
+  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorChangeTimes = [];
+  rs.expectedTaps = rs.measures * 4;
+  renderObstructScreen();
+}
+
+function rerollObstruct(){
+  startObstructRound();
+}
+
+function renderObstructScreen(){
+  var screenEl = document.getElementById('screen-mode5');
+  var rs = roundState.obstruct;
+  qs(screenEl, '[data-ob-target-main]').textContent = formatTempo(rs.tempo);
+  var measuresInput = qs(screenEl, '#input-measures-obstruct');
+  measuresInput.value = rs.measures;
+  measuresInput.disabled = false;
+  var actionBtn = qs(screenEl, '#btn-obstruct-action');
+  actionBtn.disabled = false;
+  actionBtn.classList.remove('is-tap-mode');
+  qs(actionBtn, '[data-ob-action-label]').textContent = t('tempoKeepPlayCaption');
+  qs(screenEl, '[data-obstruct-result]').classList.remove('show');
+  updateObstructProgress();
+}
+
+function updateObstructProgress(){
+  var screenEl = document.getElementById('screen-mode5');
+  var rs = roundState.obstruct;
+  qs(screenEl, '[data-obstruct-progress]').textContent = rs.tempos.length + ' / ' + rs.expectedTaps;
+}
+
+function startObstructCountIn(){
+  var rs = roundState.obstruct;
+  if (rs.phase === 'countin' || rs.phase === 'distracting') return;
+
+  rs.expectedTaps = rs.measures * 4;
+  rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorChangeTimes = [];
+  rs.phase = 'countin';
+
+  var screenEl = document.getElementById('screen-mode5');
+  qs(screenEl, '[data-obstruct-result]').classList.remove('show');
+  qs(screenEl, '#input-measures-obstruct').disabled = true;
+  var actionBtn = qs(screenEl, '#btn-obstruct-action');
+  actionBtn.classList.add('is-tap-mode');
+  qs(actionBtn, '[data-ob-action-label]').textContent = t('btnTapKeep');
+  updateObstructProgress();
+
+  var ctx = ensureAudioContext();
+  var startDelay = 0.08;
+  var interval = 60 / rs.tempo;
+  var startTime = ctx.currentTime + startDelay;
+
+  for (var i = 0; i < 4; i++){
+    var tm = startTime + i * interval;
+    scheduleClick(ctx, tm, { accent: i === 0 });
+    scheduleBeatEffects((startDelay + i * interval) * 1000, actionBtn);
+  }
+
+  var nowPerf = performance.now();
+  rs.ignoreUntilMs = nowPerf + (startDelay + 3.5 * interval) * 1000;
+  rs.times = [nowPerf + (startDelay + 3 * interval) * 1000];
+
+  /* お手本4拍の後、無音にはせずそのまま妨害テンポの再生に切り替える */
+  var countInTotalMs = (startDelay + 4 * interval) * 1000;
+  rs.countInTimeoutId = setTimeout(function(){
+    if (rs.phase !== 'countin') return;
+    rs.countInTimeoutId = null;
+    rs.phase = 'distracting';
+    startObstructDistractor(rs.tempo, actionBtn);
+  }, countInTotalMs);
+}
+
+/* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン・妨害再生中はタップとして扱う */
+function onObstructActionPress(evt){
+  var rs = roundState.obstruct;
+  if (rs.phase === 'countin' || rs.phase === 'distracting'){
+    if (evt && evt.preventDefault) evt.preventDefault();
+    onObstructTap();
+  } else if (rs.phase === 'idle' || rs.phase === 'done'){
+    if (evt && evt.preventDefault) evt.preventDefault();
+    startObstructCountIn();
+  }
+}
+
+function onObstructTap(){
+  var rs = roundState.obstruct;
+  if (rs.phase !== 'countin' && rs.phase !== 'distracting') return;
+
+  var screenEl = document.getElementById('screen-mode5');
+  var actionBtn = qs(screenEl, '#btn-obstruct-action');
+  actionBtn.classList.remove('tapped');
+  void actionBtn.offsetWidth;
+  actionBtn.classList.add('tapped');
+
+  if (rs.tapSound){
+    var ctx = ensureAudioContext();
+    scheduleClick(ctx, ctx.currentTime, { accent: false });
+  }
+
+  var now = performance.now();
+  if (now < rs.ignoreUntilMs) return;
+
+  rs.times.push(now);
+  var last = rs.times.length - 1;
+  var intervalMs = rs.times[last] - rs.times[last - 1];
+  var bpm = 60000 / intervalMs;
+  rs.tempos.push(bpm);
+  rs.xTimes.push((rs.times[last] - rs.times[0]) / 1000);
+
+  updateObstructProgress();
+
+  if (rs.tempos.length >= rs.expectedTaps){
+    rs.phase = 'done';
+    finishObstructRound();
+  }
+}
+
+function finishObstructRound(){
+  stopObstructAll();
+  var rs = roundState.obstruct;
+  var screenEl = document.getElementById('screen-mode5');
+  var avg = rs.tempos.reduce(function(a,b){ return a+b; }, 0) / rs.tempos.length;
+
+  qs(screenEl, '[data-ob-avg-tempo]').textContent = formatTempo(Math.round(avg));
+  qs(screenEl, '[data-ob-target-value]').textContent = formatTempo(rs.tempo);
+
+  var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes, rs.distractorChangeTimes);
+  qs(screenEl, '[data-ob-graph-container]').innerHTML = graphHtml;
+  qs(screenEl, '[data-obstruct-result]').classList.add('show');
+
+  qs(screenEl, '#input-measures-obstruct').disabled = false;
+  qs(screenEl, '#btn-obstruct-action').disabled = true;
+
+  recordHistory({
+    type: 'obstruct',
+    targetTempo: rs.tempo,
+    avgTempo: avg,
+    tapTempos: rs.tempos.slice(),
+    xTimes: rs.xTimes.slice(),
+    distractorChangeTimes: rs.distractorChangeTimes.slice(),
+    measures: rs.measures
+  });
+}
+
+/* ---- 妨害テンポの連続再生 (2拍ごとにランダムなテンポへ切り替わる) ---- */
+function startObstructDistractor(targetTempo, pulseEl){
+  stopObstructDistractor();
+  var ctx = ensureAudioContext();
+  var rs = roundState.obstruct;
+  var perfNowAtStart = performance.now();
+  obstructPlayback.active = true;
+  obstructPlayback.ctxTime = ctx.currentTime + 0.02;
+  obstructPlayback.ctxTimeRef = ctx.currentTime;
+  obstructPlayback.elapsedAtRef = rs.times.length ? (perfNowAtStart - rs.times[0]) / 1000 : 0;
+  obstructPlayback.pulseEl = pulseEl || null;
+  obstructPlayback.currentTempo = pickDistractorTempo(targetTempo);
+  obstructPlayback.beatsAtCurrentTempo = 0;
+  rs.distractorChangeTimes = [Math.max(0, obstructPlayback.elapsedAtRef)];
+  scheduleObstructBatch(targetTempo);
+}
+
+function scheduleObstructBatch(targetTempo){
+  if (!obstructPlayback.active) return;
+  var ctx = state.audioCtx;
+  var rs = roundState.obstruct;
+  var nowCtx = ctx.currentTime;
+  var batchSize = 4;
+  for (var i = 0; i < batchSize; i++){
+    if (obstructPlayback.beatsAtCurrentTempo >= 2){
+      obstructPlayback.currentTempo = pickDistractorTempo(targetTempo);
+      obstructPlayback.beatsAtCurrentTempo = 0;
+      var elapsed = obstructPlayback.elapsedAtRef + (obstructPlayback.ctxTime - obstructPlayback.ctxTimeRef);
+      rs.distractorChangeTimes.push(elapsed);
+    }
+    var tm = obstructPlayback.ctxTime;
+    scheduleClick(ctx, tm, { accent: false });
+    var delayMs = (tm - nowCtx) * 1000;
+    scheduleBeatEffects(delayMs, obstructPlayback.pulseEl);
+    obstructPlayback.ctxTime += 60 / obstructPlayback.currentTempo;
+    obstructPlayback.beatsAtCurrentTempo++;
+  }
+  var nextDelayMs = (obstructPlayback.ctxTime - nowCtx) * 1000 - 150;
+  obstructPlayback.batchTimeoutId = setTimeout(function(){ scheduleObstructBatch(targetTempo); }, Math.max(50, nextDelayMs));
+}
+
+function stopObstructDistractor(){
+  obstructPlayback.active = false;
+  if (obstructPlayback.batchTimeoutId){ clearTimeout(obstructPlayback.batchTimeoutId); obstructPlayback.batchTimeoutId = null; }
+  stopAllScheduledAudio();
+}
+
+/* 画面遷移時などに妨害モード関連のタイマー/再生を確実に止める */
+function stopObstructAll(){
+  var rs = roundState.obstruct;
+  if (rs.countInTimeoutId){ clearTimeout(rs.countInTimeoutId); rs.countInTimeoutId = null; }
+  stopObstructDistractor();
+}
+
+/* ==================================================================
+   グラフ描画 (SVG) — 自力タップ・テンポキープ・妨害で共用
+   ================================================================== */
+function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorChangeTimes){
   var width = 300, height = 176;
   var marginLeft = 34, marginRight = 14, marginTop = 16, marginBottom = 22;
   var plotW = width - marginLeft - marginRight;
@@ -2716,6 +3341,24 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes){
   function yScale(y){ return marginTop + plotH - ((y - yMin) / (yMax - yMin)) * plotH; }
 
   var targetY = yScale(targetTempo);
+
+  var bandRects = '';
+  if (distractorChangeTimes && distractorChangeTimes.length){
+    var points = [0];
+    distractorChangeTimes.forEach(function(v){
+      if (v > 0 && v < xMax && points.indexOf(v) === -1) points.push(v);
+    });
+    points.sort(function(a, b){ return a - b; });
+    for (var bi = 0; bi < points.length; bi++){
+      var xStart = points[bi];
+      var xEnd = bi + 1 < points.length ? points[bi + 1] : xMax;
+      if (xEnd <= xStart) continue;
+      var rectX = xScale(xStart);
+      var rectW = xScale(xEnd) - rectX;
+      var bandClass = (bi % 2 === 0) ? 'graph-band-a' : 'graph-band-b';
+      bandRects += '<rect x="' + rectX.toFixed(1) + '" y="' + marginTop + '" width="' + rectW.toFixed(1) + '" height="' + plotH + '" class="' + bandClass + '" />';
+    }
+  }
 
   var pathD = '';
   tapTempos.forEach(function(v, i){
@@ -2755,6 +3398,7 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes){
   var targetLabelY = targetY - 6 < marginTop + 8 ? targetY + 12 : targetY - 6;
 
   return '<svg viewBox="0 0 ' + width + ' ' + height + '" class="tempo-graph" role="img">' +
+    bandRects +
     gridLines +
     '<line x1="' + marginLeft + '" y1="' + targetY.toFixed(1) + '" x2="' + (width - marginRight) + '" y2="' + targetY.toFixed(1) + '" class="graph-target-line" />' +
     '<text x="' + targetLabelX + '" y="' + targetLabelY.toFixed(1) + '" class="graph-target-label" text-anchor="end">' + '\u2669=' + targetTempo + '</text>' +
@@ -2781,6 +3425,7 @@ function modeLabelKey(type){
   if (type === 'select') return 'modeLabelSelect';
   if (type === 'input') return 'modeLabelInput';
   if (type === 'tempokeep') return 'modeLabelTempoKeep';
+  if (type === 'obstruct') return 'modeLabelObstruct';
   return 'modeLabelTap';
 }
 
@@ -2788,6 +3433,27 @@ function subModeLabelKey(subMode){
   if (subMode === 'survival') return 'submodeSurvivalLabel';
   if (subMode === 'challenge60') return 'submodeChallenge60Label';
   return 'submodeUnlimitedLabel';
+}
+
+/* 履歴1件分の中身(アイコン・モード名・日時・数値サマリ)を組み立てる。
+   一覧表示と削除確認モーダルのプレビューの両方から使い回す */
+function buildHistoryRowPreviewHtml(entry){
+  if (entry.type === 'tap' || entry.type === 'tempokeep' || entry.type === 'obstruct'){
+    var tapIcon = entry.type === 'tempokeep' ? '\u25ce' : (entry.type === 'obstruct' ? '\u223f' : '\u2058');
+    return '<div class="result-mark tap-icon">' + tapIcon + '</div>' +
+      '<div class="row-main">' +
+        '<div class="row-mode">' + t(modeLabelKey(entry.type)) + ' \u00b7 ' + formatDateTime(entry.timestamp) + '</div>' +
+        '<div class="row-values">' + formatTempo(entry.targetTempo) + ' <span class="avg-inline">\u2192 ' + t('avgTempoLabel') + ' ' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
+      '</div>';
+  }
+  var icon = entry.subMode === 'survival' ? '\u2764' : (entry.subMode === 'challenge60' ? '\u23f1' : '\u2669');
+  var modeLabel = t(modeLabelKey(entry.type)) + ' \u00b7 ' + t(subModeLabelKey(entry.subMode));
+  var stats = getEntryStats(entry);
+  return '<div class="result-mark tap-icon">' + icon + '</div>' +
+    '<div class="row-main">' +
+      '<div class="row-mode">' + modeLabel + ' \u00b7 ' + formatDateTime(entry.timestamp) + '</div>' +
+      '<div class="row-values">' + buildJudgmentSummaryHtml(stats) + '</div>' +
+    '</div>';
 }
 
 function renderHistoryList(){
@@ -2806,52 +3472,26 @@ function renderHistoryList(){
   sorted.forEach(function(entry){
     var row = document.createElement('div');
     row.className = 'history-row';
-
-    if (entry.type === 'tap' || entry.type === 'tempokeep'){
-      var tapIcon = entry.type === 'tempokeep' ? '\u25ce' : '\u2058';
-      row.innerHTML =
-        '<div class="result-mark tap-icon">' + tapIcon + '</div>' +
-        '<div class="row-main">' +
-          '<div class="row-mode">' + t(modeLabelKey(entry.type)) + ' \u00b7 <span class="row-date"></span></div>' +
-          '<div class="row-values">' + formatTempo(entry.targetTempo) + ' <span class="avg-inline">\u2192 ' + t('avgTempoLabel') + ' ' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
-        '</div>' +
-        '<button class="btn-delete-entry" type="button" aria-label="delete">\ud83d\uddd1</button>' +
-        '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
-      row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
-      row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
-      row.querySelector('.btn-delete-entry').addEventListener('click', function(){ confirmDeleteHistoryEntry(entry.id); });
-    } else {
-      var icon = entry.subMode === 'survival' ? '\u2764' : (entry.subMode === 'challenge60' ? '\u23f1' : '\u2669');
-      var modeLabel = t(modeLabelKey(entry.type)) + ' \u00b7 ' + t(subModeLabelKey(entry.subMode));
-      var total = entry.correctCount + entry.incorrectCount;
-      var pct = total > 0 ? Math.round((entry.correctCount / total) * 100) : 0;
-      var summaryHtml = '<span class="count-correct">\u25cb ' + entry.correctCount + '</span><span class="count-incorrect">\u2715 ' + entry.incorrectCount + '</span><span class="count-percent">' + pct + '%</span>';
-      row.innerHTML =
-        '<div class="result-mark tap-icon">' + icon + '</div>' +
-        '<div class="row-main">' +
-          '<div class="row-mode">' + modeLabel + ' \u00b7 <span class="row-date"></span></div>' +
-          '<div class="row-values">' + summaryHtml + '</div>' +
-        '</div>' +
-        '<button class="btn-delete-entry" type="button" aria-label="delete">\ud83d\uddd1</button>' +
-        '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
-      row.querySelector('.row-date').textContent = formatDateTime(entry.timestamp);
-      row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
-      row.querySelector('.btn-delete-entry').addEventListener('click', function(){ confirmDeleteHistoryEntry(entry.id); });
-    }
+    row.innerHTML = buildHistoryRowPreviewHtml(entry) +
+      '<button class="btn-delete-entry" type="button" aria-label="delete">\ud83d\uddd1</button>' +
+      '<button class="btn-detail" type="button">' + t('detailBtn') + '</button>';
+    row.querySelector('.btn-detail').addEventListener('click', function(){ openDetailModal(entry); });
+    row.querySelector('.btn-delete-entry').addEventListener('click', function(){ confirmDeleteHistoryEntry(entry); });
     listEl.appendChild(row);
   });
 }
 
-function confirmDeleteHistoryEntry(entryId){
+function confirmDeleteHistoryEntry(entry){
+  var detailHtml = '<div class="history-row-preview">' + buildHistoryRowPreviewHtml(entry) + '</div>';
   showConfirmModal('confirmDeleteEntry', function(){
-    state.history = state.history.filter(function(h){ return h.id !== entryId; });
+    state.history = state.history.filter(function(h){ return h.id !== entry.id; });
     saveHistoryToStorage();
     renderHistoryList();
-  });
+  }, detailHtml);
 }
 
 function openDetailModal(entry){
-  if (entry.type === 'tap' || entry.type === 'tempokeep'){
+  if (entry.type === 'tap' || entry.type === 'tempokeep' || entry.type === 'obstruct'){
     openGraphDetailModal(entry);
   } else {
     openSessionDetailModal(entry);
@@ -2864,7 +3504,7 @@ function openGraphDetailModal(entry){
   summary.innerHTML =
     '<div class="stat"><span class="lbl">' + t('avgTempoLabel') + '</span><span class="val">' + formatTempo(Math.round(entry.avgTempo)) + '</span></div>' +
     '<div class="stat"><span class="lbl">' + t('targetTempoLabel') + '</span><span class="val">' + formatTempo(entry.targetTempo) + '</span></div>';
-  var graphHtml = buildTempoGraphSVG(entry.tapTempos, entry.targetTempo, entry.xTimes);
+  var graphHtml = buildTempoGraphSVG(entry.tapTempos, entry.targetTempo, entry.xTimes, entry.distractorChangeTimes);
   qs(backdrop, '[data-modal-graph]').innerHTML = graphHtml;
   backdrop.classList.add('show');
 }
@@ -2872,12 +3512,8 @@ function openGraphDetailModal(entry){
 function openSessionDetailModal(entry){
   var backdrop = document.getElementById('modal-backdrop');
   var summary = qs(backdrop, '[data-modal-summary]');
-  var total = entry.correctCount + entry.incorrectCount;
-  var pct = total > 0 ? Math.round((entry.correctCount / total) * 100) : 0;
-  summary.innerHTML =
-    '<div class="stat"><span class="lbl">' + t('resultCorrectCount') + '</span><span class="val">' + entry.correctCount + '</span></div>' +
-    '<div class="stat"><span class="lbl">' + t('resultIncorrectCount') + '</span><span class="val">' + entry.incorrectCount + '</span></div>' +
-    '<div class="stat"><span class="lbl">' + t('percentCorrectLabel') + '</span><span class="val">' + pct + '%</span></div>';
+  var stats = getEntryStats(entry);
+  summary.innerHTML = '<div class="modal-judgment-summary">' + buildJudgmentSummaryHtml(stats) + '</div>';
 
   var listHtml = '<div class="detail-log-list">';
   var qNum = 0;
@@ -2889,10 +3525,11 @@ function openSessionDetailModal(entry){
         '</div>';
     } else {
       qNum++;
-      var mark = d.correct ? '\u25cb' : '\u2715';
-      var markClass = d.correct ? 'correct' : 'incorrect';
+      var j = d.judgment || (d.correct === true ? 'correct' : 'wrong');
+      var mark = j === 'correct' ? '\u25cb' : (j === 'near' ? '\u25b3' : '\u2715');
+      var markClass = j === 'correct' ? 'correct' : (j === 'near' ? 'near' : 'incorrect');
       var valuesHtml = formatTempo(d.targetTempo);
-      if (!d.correct) valuesHtml += '<span class="wrong-val">(' + d.userTempo + ')</span>';
+      if (j !== 'correct') valuesHtml += '<span class="wrong-val">(' + d.userTempo + ')</span>';
       var extra = '';
       if (entry.subMode === 'survival' && d.livesAfter !== undefined){
         extra = '<span class="log-extra">' + t('lifeCountLabel') + ' ' + d.livesAfter + '</span>';
@@ -2933,9 +3570,12 @@ function openInfoModal(titleKey, bodyHtml){
    ================================================================== */
 var pendingConfirmAction = null;
 
-function showConfirmModal(messageKey, onConfirm){
+function showConfirmModal(messageKey, onConfirm, detailHtml){
   var backdrop = document.getElementById('confirm-backdrop');
   qs(backdrop, '[data-confirm-message]').textContent = t(messageKey);
+  var detailEl = qs(backdrop, '[data-confirm-detail]');
+  detailEl.innerHTML = detailHtml || '';
+  detailEl.style.display = detailHtml ? 'flex' : 'none';
   pendingConfirmAction = onConfirm;
   backdrop.classList.add('show');
 }
@@ -2959,6 +3599,8 @@ function renderSettingsUI(){
     var key = cb.getAttribute('data-setting-checkbox');
     cb.checked = !!state.settings[key];
   });
+  var editTempoListBtn = qs(screenEl, '#btn-edit-tempolist');
+  if (editTempoListBtn) editTempoListBtn.textContent = t('btnEditTempoList') + ' (' + TEMPO_LIST.length + ')';
 }
 
 function setSegActive(root, segName, value){
@@ -2977,6 +3619,45 @@ function renderSubModeSelector(){
   qsa(document, '[data-submode-selector] button').forEach(function(b){
     b.classList.toggle('active', b.getAttribute('data-submode-value') === state.listenSubMode);
   });
+}
+
+/* ==================================================================
+   お題テンポリスト編集モーダル
+   ================================================================== */
+function renderTempoListModal(){
+  var backdrop = document.getElementById('tempolist-backdrop');
+  var listEl = qs(backdrop, '[data-tempolist-items]');
+  listEl.innerHTML = '';
+  TEMPO_LIST.forEach(function(v){
+    var row = document.createElement('div');
+    row.className = 'tempolist-item';
+    row.innerHTML = '<span class="tempolist-value">' + v + '</span>' +
+      '<button class="btn-tempolist-remove" type="button" data-value="' + v + '" aria-label="remove">\ud83d\uddd1</button>';
+    listEl.appendChild(row);
+  });
+  qsa(listEl, '.btn-tempolist-remove').forEach(function(btn){
+    btn.disabled = TEMPO_LIST.length <= MIN_TEMPO_LIST_LENGTH;
+    btn.addEventListener('click', function(){
+      var v = parseInt(this.getAttribute('data-value'), 10);
+      var res = removeCustomTempo(v);
+      if (res.ok){
+        qs(backdrop, '[data-tempolist-error]').textContent = '';
+        renderTempoListModal();
+        renderSettingsUI();
+      }
+    });
+  });
+}
+
+function openTempoListModal(){
+  qs(document.getElementById('tempolist-backdrop'), '[data-tempolist-error]').textContent = '';
+  document.getElementById('input-tempolist-new').value = '';
+  renderTempoListModal();
+  document.getElementById('tempolist-backdrop').classList.add('show');
+}
+
+function closeTempoListModal(){
+  document.getElementById('tempolist-backdrop').classList.remove('show');
 }
 
 /* ==================================================================
@@ -3015,6 +3696,7 @@ function initEvents(){
         if (modeType === 'select' || modeType === 'input'){ rerollRound(modeType); }
         else if (modeType === 'tap'){ rerollTap(); }
         else if (modeType === 'tempokeep'){ rerollTempoKeep(); }
+        else if (modeType === 'obstruct'){ rerollObstruct(); }
         return;
       }
       if (action === 'next'){
@@ -3024,6 +3706,7 @@ function initEvents(){
         }
         else if (modeType === 'tap'){ startTapRound(); }
         else if (modeType === 'tempokeep'){ startTempoKeepRound(); }
+        else if (modeType === 'obstruct'){ startObstructRound(); }
         return;
       }
       if (action === 'play'){
@@ -3065,6 +3748,14 @@ function initEvents(){
         renderTempoKeepScreen();
         return;
       }
+      if (action === 'retry-obstruct'){
+        stopObstructAll();
+        var rsOb = roundState.obstruct;
+        rsOb.phase = 'idle';
+        rsOb.times = []; rsOb.tempos = []; rsOb.xTimes = []; rsOb.distractorChangeTimes = [];
+        renderObstructScreen();
+        return;
+      }
       if (action === 'clear-history'){
         showConfirmModal('confirmClearHistory', function(){
           state.history = [];
@@ -3104,6 +3795,18 @@ function initEvents(){
     roundState.tempokeep.tapSound = this.checked;
   });
 
+  var inputMeasuresObstruct = document.getElementById('input-measures-obstruct');
+  inputMeasuresObstruct.addEventListener('input', function(){
+    var v = parseInt(this.value, 10);
+    if (!isNaN(v) && v >= 1){
+      roundState.obstruct.measures = Math.min(16, v);
+    }
+  });
+
+  document.getElementById('toggle-obstruct-tapsound').addEventListener('change', function(){
+    roundState.obstruct.tapSound = this.checked;
+  });
+
   /* タップ判定は「指が触れた瞬間」で計測したいので、click(=離した時)ではなくpointerdownを使う */
   document.getElementById('btn-tap').addEventListener('pointerdown', function(evt){
     evt.preventDefault();
@@ -3111,6 +3814,9 @@ function initEvents(){
   });
   document.getElementById('btn-tempokeep-action').addEventListener('pointerdown', function(evt){
     onTempoKeepActionPress(evt);
+  });
+  document.getElementById('btn-obstruct-action').addEventListener('pointerdown', function(evt){
+    onObstructActionPress(evt);
   });
 
   qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
@@ -3164,6 +3870,36 @@ function initEvents(){
     if (evt.target === this) closeConfirmModal();
   });
 
+  document.getElementById('btn-edit-tempolist').addEventListener('click', openTempoListModal);
+  document.getElementById('btn-tempolist-close').addEventListener('click', closeTempoListModal);
+  document.getElementById('tempolist-backdrop').addEventListener('click', function(evt){
+    if (evt.target === this) closeTempoListModal();
+  });
+  document.getElementById('btn-tempolist-add').addEventListener('click', function(){
+    var input = document.getElementById('input-tempolist-new');
+    var errEl = qs(document.getElementById('tempolist-backdrop'), '[data-tempolist-error]');
+    var value = parseInt(input.value, 10);
+    var res = addCustomTempo(value);
+    if (res.ok){
+      input.value = '';
+      errEl.textContent = '';
+      renderTempoListModal();
+      renderSettingsUI();
+    } else {
+      errEl.textContent = res.reason === 'dup' ? t('tempoListErrDup') : t('tempoListErrRange');
+    }
+  });
+  document.getElementById('input-tempolist-new').addEventListener('keydown', function(evt){
+    if (evt.key === 'Enter') document.getElementById('btn-tempolist-add').click();
+  });
+  document.getElementById('btn-tempolist-reset').addEventListener('click', function(){
+    showConfirmModal('confirmResetTempoList', function(){
+      resetTempoListToDefault();
+      renderTempoListModal();
+      renderSettingsUI();
+    });
+  });
+
   window.addEventListener('beforeinstallprompt', function(evt){
     evt.preventDefault();
     deferredInstallPrompt = evt;
@@ -3202,16 +3938,29 @@ function updateInstallButtonVisibility(){
   btn.style.display = isStandaloneDisplay ? 'none' : '';
 }
 
+/* prefers-reduced-motionが有効な環境では振り子アニメーションを止める(SMILはCSSのanimation-play-stateでは制御できないため要素ごと除去する) */
+function initPendulumMotion(){
+  try {
+    var reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion){
+      var anim = document.querySelector('.pendulum .arm animateTransform');
+      if (anim) anim.remove();
+    }
+  } catch (e){ /* matchMedia非対応環境では何もしない */ }
+}
+
 /* ==================================================================
    初期化
    ================================================================== */
 function init(){
+  loadTempoListFromStorage();
   loadSettingsFromStorage();
   loadHistoryFromStorage();
   applyI18n();
   applyTheme();
   renderSubModeSelector();
   updateInstallButtonVisibility();
+  initPendulumMotion();
   initEvents();
 }
 
