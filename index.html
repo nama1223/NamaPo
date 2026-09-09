@@ -117,8 +117,38 @@
     position:relative;
     flex-shrink:0;
   }
-  .pendulum svg{ width:100%; height:100%; display:block; }
-  .pendulum .arm{ will-change:transform; }
+  .pendulum-base{
+    position:absolute;
+    left:2px;
+    right:2px;
+    bottom:2px;
+    height:2px;
+    border-radius:1px;
+    background:var(--border);
+  }
+  .pendulum-arm{
+    position:absolute;
+    left:50%;
+    bottom:2px;
+    width:2px;
+    height:18px;
+    border-radius:1px;
+    background:var(--accent);
+    transform-origin:50% 100%;
+    transform:translateX(-50%) rotate(0deg);
+    will-change:transform;
+  }
+  .pendulum-arm::after{
+    content:'';
+    position:absolute;
+    top:-3px;
+    left:50%;
+    width:6px;
+    height:6px;
+    border-radius:50%;
+    background:var(--accent);
+    transform:translateX(-50%);
+  }
   #btn-lang{
     padding:6px 12px;
     border:1px solid var(--border);
@@ -286,7 +316,6 @@
   .streak-badge .badge-sep{
     opacity:0.5;
   }
-  [data-submode="challenge60"] .streak-badge{ display:none; }
   .points-fly{
     position:absolute;
     left:8%;
@@ -297,15 +326,19 @@
     white-space:nowrap;
     pointer-events:none;
     z-index:60;
-    animation:points-fly-anim 0.8s cubic-bezier(0.2,0.6,0.35,1) forwards;
+    animation:points-fly-anim 1.6s linear forwards;
   }
   .points-fly.judgment-correct{ color:var(--correct-bg); }
   .points-fly.judgment-near{ color:var(--near-bg); }
   .points-fly.judgment-wrong{ color:var(--incorrect-bg); }
   @keyframes points-fly-anim{
     0%{ opacity:0; left:8%; bottom:30%; transform:scale(0.8); }
-    14%{ opacity:1; transform:scale(1.1); }
-    100%{ opacity:0; left:80%; bottom:76%; transform:scale(1); }
+    12.5%{ opacity:1; left:22.4%; bottom:39.2%; transform:scale(1.1); }
+    31.25%{ left:36.8%; bottom:48.4%; transform:scale(1); }
+    68.75%{ left:51.2%; bottom:57.6%; transform:scale(1); }
+    87.5%{ left:65.6%; bottom:66.8%; transform:scale(1); }
+    92%{ opacity:1; left:70.8%; bottom:70.1%; transform:scale(1); }
+    100%{ opacity:0; left:80%; bottom:76%; transform:scale(0.95); }
   }
   .reroll-row{
     display:flex;
@@ -620,6 +653,23 @@
     font-weight:700;
     color:var(--accent);
   }
+  .target-display .big-num.tap-editable{
+    cursor:pointer;
+    display:inline-block;
+    border-bottom:2px dashed var(--border);
+    padding-bottom:2px;
+  }
+  .target-display .big-num .target-edit-input{
+    font-family:var(--font-display);
+    font-size:44px;
+    font-weight:700;
+    color:var(--accent);
+    background:var(--bg-elevated-2);
+    border:2px solid var(--accent);
+    border-radius:var(--radius-s);
+    width:4.2em;
+    text-align:center;
+  }
   .measures-row{
     display:flex;
     align-items:center;
@@ -720,6 +770,7 @@
   .graph-band-a{ fill:var(--accent); opacity:0.08; }
   .graph-band-b{ fill:var(--near-bg); opacity:0.12; }
   .graph-band-label{ font-size:9px; fill:var(--text-muted); font-family:var(--font-display); font-weight:700; }
+  .graph-band-caption{ font-size:8px; fill:var(--text-muted); font-family:var(--font-display); font-style:italic; opacity:0.8; }
   .graph-target-line{ stroke:var(--accent); stroke-width:2; stroke-dasharray:5 4; }
   .graph-target-label{ fill:var(--accent); font-size:9px; font-family:var(--font-display); }
   .graph-line{ stroke:var(--text); stroke-width:2; stroke-linejoin:round; stroke-linecap:round; }
@@ -1260,15 +1311,8 @@
   <header id="app-header">
     <div class="brand">
       <div class="pendulum" aria-hidden="true">
-        <svg viewBox="0 0 20 24">
-          <line x1="2" y1="22" x2="18" y2="22" stroke="var(--border)" stroke-width="2" stroke-linecap="round"/>
-          <g transform="translate(10,22)">
-            <g class="arm">
-              <line x1="0" y1="0" x2="0" y2="-18" stroke="var(--accent)" stroke-width="2" stroke-linecap="round"/>
-              <circle cx="0" cy="-18" r="3" fill="var(--accent)"/>
-            </g>
-          </g>
-        </svg>
+        <div class="pendulum-base"></div>
+        <div class="pendulum-arm"></div>
       </div>
       <span class="brand-name"><span class="brand-nama">Nama</span>Tem<span class="brand-po">po</span>Trainer</span>
     </div>
@@ -1447,7 +1491,7 @@
         <div class="mode-title" data-i18n="menuModeTap"></div>
       </div>
       <div class="reroll-row">
-        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1487,7 +1531,7 @@
         <div class="mode-title" data-i18n="menuModeTempoKeep"></div>
       </div>
       <div class="reroll-row">
-        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1537,7 +1581,7 @@
         <div class="mode-title" data-i18n="menuModeObstruct"></div>
       </div>
       <div class="reroll-row">
-        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnReroll"></button>
+        <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1768,6 +1812,7 @@ var I18N = {
     submodeChallenge60Label: '60秒チャレンジ',
     streakLabel: '連続正解',
     btnReroll: 'お題を変える',
+    btnRerollRandom: 'お題を変える(ランダム)',
     playCaption: 'タップして8拍再生',
     btnAnswer: '回答',
     correctIs: '正解は',
@@ -1833,6 +1878,7 @@ var I18N = {
     modeLabelTap: '自力タップ',
     modeLabelTempoKeep: 'テンポキープ',
     modeLabelObstruct: '妨害',
+    graphDistractorLabel: '妨害テンポ',
     detailBtn: '詳細',
     confirmClearHistory: '履歴をすべて消去します。よろしいですか？',
     confirmDeleteEntry: 'この記録を削除します。よろしいですか？',
@@ -1861,6 +1907,7 @@ var I18N = {
     submodeChallenge60Label: '60s Challenge',
     streakLabel: 'Streak',
     btnReroll: 'Change tempo',
+    btnRerollRandom: 'Change tempo (Random)',
     playCaption: 'Tap to play 8 beats',
     btnAnswer: 'Answer',
     correctIs: 'Correct answer',
@@ -1926,6 +1973,7 @@ var I18N = {
     modeLabelTap: 'Self-Paced Tap',
     modeLabelTempoKeep: 'Tempo Keep',
     modeLabelObstruct: 'Interference',
+    graphDistractorLabel: 'Dist.',
     detailBtn: 'Detail',
     confirmClearHistory: 'This will clear all history. Continue?',
     confirmDeleteEntry: 'Delete this entry?',
@@ -2123,6 +2171,111 @@ function judgmentClass(judgment){
   return judgment === 'correct' ? 'is-correct' : (judgment === 'near' ? 'is-near' : 'is-incorrect');
 }
 
+/* タップでトレーニング系(自力タップ/テンポキープ/妨害)共通: お題を手動値で開始し直す */
+function commitManualTempo(type, value){
+  if (type === 'tap') startTapRound(value);
+  else if (type === 'tempokeep') startTempoKeepRound(value);
+  else if (type === 'obstruct') startObstructRound(value);
+}
+
+/* 「小節数」入力欄: 縦にスワイプ(ドラッグ)すると時間基準(150msごとに1変更)で数値を増減させる。
+   上方向スワイプで増加、下方向スワイプで減少。閾値内の小さな動きはタップでの手動入力を妨げないよう無視する */
+function enableMeasuresSwipe(inputEl){
+  var pointerId = null;
+  var startY = 0;
+  var direction = 0;
+  var intervalId = null;
+  var dragging = false;
+
+  function tick(){
+    if (direction === 0) return;
+    var min = parseInt(inputEl.min, 10);
+    var max = parseInt(inputEl.max, 10);
+    var v = parseInt(inputEl.value, 10);
+    if (isNaN(v)) v = min;
+    v = Math.max(min, Math.min(max, v + direction));
+    inputEl.value = v;
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+  }
+
+  function onPointerDown(evt){
+    if (pointerId !== null) return;
+    pointerId = evt.pointerId;
+    startY = evt.clientY;
+    direction = 0;
+    dragging = false;
+    if (intervalId === null) intervalId = setInterval(tick, 150);
+  }
+  function onPointerMove(evt){
+    if (evt.pointerId !== pointerId) return;
+    var dy = evt.clientY - startY;
+    var threshold = 6; /* 指の小さなブレを無視するための遊び */
+    var newDirection = 0;
+    if (dy < -threshold) newDirection = 1;       /* 上へスワイプ = 増加 */
+    else if (dy > threshold) newDirection = -1;  /* 下へスワイプ = 減少 */
+    if (newDirection !== 0 && !dragging){
+      dragging = true;
+      if (inputEl.blur) inputEl.blur(); /* ドラッグ確定後はキーボード表示を避ける */
+    }
+    if (newDirection !== 0) evt.preventDefault();
+    direction = newDirection;
+  }
+  function onPointerUp(evt){
+    if (evt.pointerId !== pointerId) return;
+    pointerId = null;
+    direction = 0;
+    dragging = false;
+    if (intervalId !== null){ clearInterval(intervalId); intervalId = null; }
+  }
+
+  inputEl.addEventListener('pointerdown', onPointerDown);
+  inputEl.addEventListener('pointermove', onPointerMove);
+  inputEl.addEventListener('pointerup', onPointerUp);
+  inputEl.addEventListener('pointercancel', onPointerUp);
+}
+
+
+function enableTargetTapEdit(screenId, containerSelector, type){
+  var screenEl = document.getElementById(screenId);
+  var container = qs(screenEl, containerSelector);
+  if (!container) return;
+  container.classList.add('tap-editable');
+  container.addEventListener('click', function(){
+    if (container.querySelector('.target-edit-input')) return; /* 編集中は何もしない */
+    var rs = roundState[type];
+    var current = rs.tempo;
+    var original = container.innerHTML;
+    var input = document.createElement('input');
+    input.type = 'number';
+    input.inputMode = 'numeric';
+    input.className = 'target-edit-input';
+    input.min = '20';
+    input.max = '400';
+    input.value = current;
+    container.innerHTML = '';
+    container.appendChild(input);
+    input.focus();
+    input.select();
+
+    var done = false;
+    function commit(){
+      if (done) return;
+      done = true;
+      var v = parseInt(input.value, 10);
+      /* 先に元の表示構造へ戻す(各モードのrender関数がdata-target系の要素を参照するため) */
+      container.innerHTML = original;
+      if (!isNaN(v) && v >= 20 && v <= 400 && v !== current){
+        commitManualTempo(type, v);
+      }
+    }
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', function(evt){
+      if (evt.key === 'Enter'){ input.blur(); }
+      else if (evt.key === 'Escape'){ done = true; container.innerHTML = original; }
+    });
+  });
+}
+
 /* 回答時、獲得ポイントを画面上に大きく飛ばして見せる演出 */
 function spawnPointsFly(type, judgment, points){
   var screenEl = document.getElementById('screen-' + modeScreenId(type));
@@ -2134,7 +2287,7 @@ function spawnPointsFly(type, judgment, points){
   screenEl.appendChild(el);
   var cleanup = function(){ if (el.parentNode) el.parentNode.removeChild(el); };
   el.addEventListener('animationend', cleanup);
-  setTimeout(cleanup, 1200); /* animationendが発火しない環境向けの保険 */
+  setTimeout(cleanup, 2000); /* animationendが発火しない環境向けの保険 */
 }
 
 /* ヘッダー部のポイントバッジを現在のセッション累計に合わせて即時更新 */
@@ -2180,9 +2333,9 @@ function judgmentPercents(stats){
 function buildJudgmentSummaryHtml(stats){
   var pct = judgmentPercents(stats);
   return '<span class="count-points">' + stats.points + 'P</span>' +
-    '<span class="count-o">\u25cb ' + stats.o + '</span>' +
-    '<span class="count-near">\u25b3 ' + stats.near + '</span>' +
-    '<span class="count-x">\u2715 ' + stats.x + '</span>' +
+    '<span class="count-o">\u25cb' + stats.o + '</span>' +
+    '<span class="count-near">\u25b3' + stats.near + '</span>' +
+    '<span class="count-x">\u2715' + stats.x + '</span>' +
     '<span class="count-percent">' + pct.pctStrict + '%/' + pct.pctLenient + '%</span>';
 }
 
@@ -2917,6 +3070,8 @@ function handleChallengeAnswer(type, judgment, value, btnEl){
   if (rs.uiState !== 'playing') return;
   stopContinuousPlayback();
 
+  rs.streak = (judgment === 'wrong') ? 0 : rs.streak + 1;
+
   if (judgment === 'correct'){ playCorrectSfx(); }
   else if (judgment === 'near'){ playNearSfx(); }
   else { playIncorrectSfx(); }
@@ -2977,18 +3132,15 @@ function endChallenge60(type){
 /* ==================================================================
    モード3 : 自力タップ
    ================================================================== */
-function startTapRound(){
+function startTapRound(manualTempo){
   var rs = roundState.tap;
-  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.tempo = (typeof manualTempo === 'number') ? manualTempo : pickRandomTempo(rs.tempo);
   resetTapAttempt();
   renderTapScreen();
 }
 
 function rerollTap(){
-  var rs = roundState.tap;
-  rs.tempo = pickRandomTempo(rs.tempo);
-  resetTapAttempt();
-  renderTapScreen();
+  startTapRound();
 }
 
 function resetTapAttempt(){
@@ -3064,10 +3216,10 @@ function finishTapRound(){
 /* ==================================================================
    モード4 : テンポキープ
    ================================================================== */
-function startTempoKeepRound(){
+function startTempoKeepRound(manualTempo){
   stopAllScheduledAudio();
   var rs = roundState.tempokeep;
-  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.tempo = (typeof manualTempo === 'number') ? manualTempo : pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
   rs.times = []; rs.tempos = []; rs.xTimes = [];
   rs.expectedTaps = rs.measures * 4;
@@ -3205,10 +3357,10 @@ function finishTempoKeepRound(){
    モード5 : 妨害 (基本仕様はテンポキープに準じる。お手本4拍のあとは無音にならず、
    お題とは違うテンポの音が2拍ごとに変わりながら鳴り続け、プレイヤーのテンポ感覚を惑わす)
    ================================================================== */
-function startObstructRound(){
+function startObstructRound(manualTempo){
   stopObstructAll();
   var rs = roundState.obstruct;
-  rs.tempo = pickRandomTempo(rs.tempo);
+  rs.tempo = (typeof manualTempo === 'number') ? manualTempo : pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
   rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorSegments = [];
   rs.expectedTaps = rs.measures * 4;
@@ -3439,6 +3591,7 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorSegments){
   var bandRects = '';
   var bandLabels = '';
   if (distractorSegments && distractorSegments.length){
+    bandLabels += '<text x="' + (marginLeft + 2) + '" y="' + (marginTop + 10) + '" class="graph-band-caption" text-anchor="start">' + t('graphDistractorLabel') + '</text>';
     var segs = distractorSegments.filter(function(s){ return s.time < xMax; });
     for (var bi = 0; bi < segs.length; bi++){
       var xStart = Math.max(0, segs[bi].time);
@@ -3884,6 +4037,7 @@ function initEvents(){
       roundState.tempokeep.measures = Math.min(16, v);
     }
   });
+  enableMeasuresSwipe(inputMeasures);
 
   document.getElementById('toggle-tk-tapsound').addEventListener('change', function(){
     roundState.tempokeep.tapSound = this.checked;
@@ -3896,6 +4050,7 @@ function initEvents(){
       roundState.obstruct.measures = Math.min(16, v);
     }
   });
+  enableMeasuresSwipe(inputMeasuresObstruct);
 
   document.getElementById('toggle-obstruct-tapsound').addEventListener('change', function(){
     roundState.obstruct.tapSound = this.checked;
@@ -3912,6 +4067,10 @@ function initEvents(){
   document.getElementById('btn-obstruct-action').addEventListener('pointerdown', function(evt){
     onObstructActionPress(evt);
   });
+
+  enableTargetTapEdit('screen-mode3', '.big-num', 'tap');
+  enableTargetTapEdit('screen-mode4', '.big-num', 'tempokeep');
+  enableTargetTapEdit('screen-mode5', '.big-num', 'obstruct');
 
   qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -4035,13 +4194,14 @@ function updateInstallButtonVisibility(){
 /* prefers-reduced-motionが有効な環境では振り子アニメーションを止める(SMILはCSSのanimation-play-stateでは制御できないため要素ごと除去する) */
 /* 振り子アニメーション: CSSアニメーション/SMILに頼らず、rAFでtransform属性を毎フレーム直接書き換える。
    端末やブラウザのアニメーションエンジンの差異(Android環境で描画されない問題)を回避するための方式 */
+/* 振り子アニメーション: SVGを使わず、素のHTML div + CSS transform(rotate)をJSで毎フレーム直接書き換える。
+   SVG特有の座標系/描画エンジンの差異を根本的に避けるための構成。
+   これまでprefers-reduced-motionが真の場合にアニメーションを止める処理を入れていたが、
+   端末側の設定次第で意図せず該当し、これが今までの修正が効かなかった原因である可能性があるため、
+   ここでは判定を行わず常にアニメーションさせる */
 function initPendulumMotion(){
-  var armEl = document.querySelector('.pendulum .arm');
+  var armEl = document.querySelector('.pendulum-arm');
   if (!armEl) return;
-
-  var reduceMotion = false;
-  try { reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches; } catch (e){ /* matchMedia非対応環境では通常通りアニメーションする */ }
-  if (reduceMotion) return; /* 静止したまま(初期状態=角度0)にする */
 
   var maxAngle = 18;
   var periodMs = 4000; /* -18度→+18度→-18度の1往復にかかる時間 */
@@ -4051,7 +4211,7 @@ function initPendulumMotion(){
   function frame(ts){
     if (startTs === null) startTs = ts;
     var angle = maxAngle * Math.sin((2 * Math.PI * (ts - startTs)) / periodMs);
-    armEl.setAttribute('transform', 'rotate(' + angle.toFixed(2) + ')');
+    armEl.style.transform = 'translateX(-50%) rotate(' + angle.toFixed(2) + 'deg)';
     rafId = requestAnimationFrame(frame);
   }
 
