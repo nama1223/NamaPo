@@ -634,10 +634,6 @@
     background:var(--accent);
     color:var(--correct-text);
   }
-  .btn-top-inline{
-    background:var(--bg-elevated-2);
-    border:1px solid var(--border);
-  }
   /* ---------- tap-based modes (mode3 自力タップ / mode4 テンポキープ) ---------- */
   .target-display{
     display:flex;
@@ -677,7 +673,7 @@
     gap:10px;
   }
   .measures-row .row-label{ font-size:14px; font-weight:600; }
-  .measures-row input{
+  .measures-row input[type="number"]{
     width:70px;
     padding:8px 6px;
     text-align:center;
@@ -687,6 +683,7 @@
     background:var(--bg-elevated);
     border:1px solid var(--border);
     border-radius:var(--radius-s);
+    touch-action:none;
   }
   .tap-wrap{
     display:flex;
@@ -1411,7 +1408,6 @@
         <div class="reveal-label" data-i18n="correctIs"></div>
         <div class="reveal-value"><span data-reveal-value>--</span></div>
         <div class="reveal-actions">
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
         </div>
       </div>
@@ -1419,7 +1415,6 @@
         <div class="result-title" data-result-title></div>
         <div class="result-stats" data-result-stats></div>
         <div class="reveal-actions">
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="retry-session" type="button" data-i18n="btnRetrySession"></button>
         </div>
       </div>
@@ -1468,7 +1463,6 @@
         <div class="reveal-label" data-i18n="correctIs"></div>
         <div class="reveal-value"><span data-reveal-value>--</span></div>
         <div class="reveal-actions">
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
         </div>
       </div>
@@ -1476,7 +1470,6 @@
         <div class="result-title" data-result-title></div>
         <div class="result-stats" data-result-stats></div>
         <div class="reveal-actions">
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="retry-session" type="button" data-i18n="btnRetrySession"></button>
         </div>
       </div>
@@ -1516,7 +1509,6 @@
         <div class="graph-box" data-graph-container></div>
         <div class="tap-result-actions">
           <button class="btn-retry" data-action="retry-tap" type="button" data-i18n="btnRetryTap"></button>
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
         </div>
       </div>
@@ -1566,7 +1558,6 @@
         <div class="graph-box" data-tk-graph-container></div>
         <div class="tap-result-actions">
           <button class="btn-retry" data-action="retry-tempokeep" type="button" data-i18n="btnRetryTap"></button>
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
         </div>
       </div>
@@ -1616,7 +1607,6 @@
         <div class="graph-box" data-ob-graph-container></div>
         <div class="tap-result-actions">
           <button class="btn-retry" data-action="retry-obstruct" type="button" data-i18n="btnRetryTap"></button>
-          <button class="btn-top-inline" data-action="back-top" type="button" data-i18n="btnBackTop"></button>
           <button class="btn-next" data-action="next" type="button" data-i18n="btnNext"></button>
         </div>
       </div>
@@ -2209,15 +2199,17 @@ function enableMeasuresSwipe(inputEl){
   function onPointerMove(evt){
     if (evt.pointerId !== pointerId) return;
     var dy = evt.clientY - startY;
-    var threshold = 6; /* 指の小さなブレを無視するための遊び */
+    var threshold = 6; /* 指の小さなブレを無視するための遊び(=タップでのフォーカスは妨げない) */
     var newDirection = 0;
     if (dy < -threshold) newDirection = 1;       /* 上へスワイプ = 増加 */
     else if (dy > threshold) newDirection = -1;  /* 下へスワイプ = 減少 */
-    if (newDirection !== 0 && !dragging){
-      dragging = true;
-      if (inputEl.blur) inputEl.blur(); /* ドラッグ確定後はキーボード表示を避ける */
+    if (newDirection !== 0){
+      evt.preventDefault(); /* ドラッグと判定できた時点でスクロール/pull-to-refreshを止める */
+      if (!dragging){
+        dragging = true;
+        if (inputEl.blur) inputEl.blur(); /* ドラッグ確定後はキーボード表示を避ける */
+      }
     }
-    if (newDirection !== 0) evt.preventDefault();
     direction = newDirection;
   }
   function onPointerUp(evt){
@@ -2228,10 +2220,12 @@ function enableMeasuresSwipe(inputEl){
     if (intervalId !== null){ clearInterval(intervalId); intervalId = null; }
   }
 
-  inputEl.addEventListener('pointerdown', onPointerDown);
-  inputEl.addEventListener('pointermove', onPointerMove);
-  inputEl.addEventListener('pointerup', onPointerUp);
-  inputEl.addEventListener('pointercancel', onPointerUp);
+  /* pointermoveでのpreventDefault()を確実に効かせるため、passive:falseを明示する
+     (パッシブ扱いのままだとpreventDefault()が無視され、下スワイプがブラウザのpull-to-refreshに奪われる環境がある) */
+  inputEl.addEventListener('pointerdown', onPointerDown, { passive: false });
+  inputEl.addEventListener('pointermove', onPointerMove, { passive: false });
+  inputEl.addEventListener('pointerup', onPointerUp, { passive: false });
+  inputEl.addEventListener('pointercancel', onPointerUp, { passive: false });
 }
 
 
