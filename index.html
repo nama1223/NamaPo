@@ -1814,6 +1814,8 @@ var I18N = {
     btnTapKeep: 'タップ',
     avgTempoLabel: '平均テンポ',
     btnRetryTap: 'もう一度タップ',
+    btnTapFinished: '終了',
+    btnTapAgain: 'もう一回',
     measuresLabel: '小節数',
     tempoKeepTapSoundLabel: '自分のタップ音',
     tempoKeepPlayCaption: 'タップで4拍のお手本を再生',
@@ -1909,6 +1911,8 @@ var I18N = {
     btnTapKeep: 'Tap',
     avgTempoLabel: 'Average tempo',
     btnRetryTap: 'Retry',
+    btnTapFinished: 'Done',
+    btnTapAgain: 'Again',
     measuresLabel: 'Measures',
     tempoKeepTapSoundLabel: 'My tap sound',
     tempoKeepPlayCaption: 'Tap to play a 4-beat example',
@@ -2006,8 +2010,8 @@ var roundState = {
   select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, questionNumber: 1 },
   input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, questionNumber: 1 },
   tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
-  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8 },
-  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorSegments: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null }
+  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, resultCooldownTimeoutId: null },
+  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorSegments: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null, resultCooldownTimeoutId: null }
 };
 
 /* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
@@ -2176,9 +2180,12 @@ function enableMeasuresSwipe(inputEl){
   var direction = 0;
   var intervalId = null;
   var dragging = false;
+  var lastMoveTime = 0;
+  var stillnessMs = 200; /* この時間以上pointermoveが来なければ「指が止まった」とみなし変化を止める */
 
   function tick(){
     if (direction === 0) return;
+    if (Date.now() - lastMoveTime > stillnessMs) return; /* 指が止まっている間は変化させない */
     var min = parseInt(inputEl.min, 10);
     var max = parseInt(inputEl.max, 10);
     var v = parseInt(inputEl.value, 10);
@@ -2194,10 +2201,12 @@ function enableMeasuresSwipe(inputEl){
     startY = evt.clientY;
     direction = 0;
     dragging = false;
+    lastMoveTime = 0;
     if (intervalId === null) intervalId = setInterval(tick, 150);
   }
   function onPointerMove(evt){
     if (evt.pointerId !== pointerId) return;
+    lastMoveTime = Date.now(); /* pointermoveが来ている=指が動いているという事実を毎回記録 */
     var dy = evt.clientY - startY;
     var threshold = 6; /* 指の小さなブレを無視するための遊び(=タップでのフォーカスは妨げない) */
     var newDirection = 0;
@@ -3213,6 +3222,7 @@ function finishTapRound(){
 function startTempoKeepRound(manualTempo){
   stopAllScheduledAudio();
   var rs = roundState.tempokeep;
+  if (rs.resultCooldownTimeoutId){ clearTimeout(rs.resultCooldownTimeoutId); rs.resultCooldownTimeoutId = null; }
   rs.tempo = (typeof manualTempo === 'number') ? manualTempo : pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
   rs.times = []; rs.tempos = []; rs.xTimes = [];
@@ -3280,6 +3290,7 @@ function startTempoKeepCountIn(){
 /* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン中はタップとして扱う */
 function onTempoKeepActionPress(evt){
   var rs = roundState.tempokeep;
+  if (rs.resultCooldownTimeoutId){ return; } /* 結果表示直後のクールダウン中は、万一disabledをすり抜けても無視する */
   if (rs.phase === 'countin'){
     if (evt && evt.preventDefault) evt.preventDefault();
     onTempoKeepTap();
@@ -3335,7 +3346,16 @@ function finishTempoKeepRound(){
   qs(screenEl, '[data-tempokeep-result]').classList.add('show');
 
   qs(screenEl, '#input-measures').disabled = false;
-  qs(screenEl, '#btn-tempokeep-action').disabled = true;
+  var actionBtn = qs(screenEl, '#btn-tempokeep-action');
+  actionBtn.disabled = true;
+  qs(actionBtn, '[data-tk-action-label]').textContent = t('btnTapFinished');
+  if (rs.resultCooldownTimeoutId){ clearTimeout(rs.resultCooldownTimeoutId); }
+  rs.resultCooldownTimeoutId = setTimeout(function(){
+    rs.resultCooldownTimeoutId = null;
+    if (rs.phase !== 'done') return; /* その間に別の操作が行われていたら何もしない */
+    actionBtn.disabled = false;
+    qs(actionBtn, '[data-tk-action-label]').textContent = t('btnTapAgain');
+  }, 2000);
 
   recordHistory({
     type: 'tempokeep',
@@ -3354,6 +3374,7 @@ function finishTempoKeepRound(){
 function startObstructRound(manualTempo){
   stopObstructAll();
   var rs = roundState.obstruct;
+  if (rs.resultCooldownTimeoutId){ clearTimeout(rs.resultCooldownTimeoutId); rs.resultCooldownTimeoutId = null; }
   rs.tempo = (typeof manualTempo === 'number') ? manualTempo : pickRandomTempo(rs.tempo);
   rs.phase = 'idle';
   rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorSegments = [];
@@ -3430,6 +3451,7 @@ function startObstructCountIn(){
 /* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン・妨害再生中はタップとして扱う */
 function onObstructActionPress(evt){
   var rs = roundState.obstruct;
+  if (rs.resultCooldownTimeoutId){ return; } /* 結果表示直後のクールダウン中は、万一disabledをすり抜けても無視する */
   if (rs.phase === 'countin' || rs.phase === 'distracting'){
     if (evt && evt.preventDefault) evt.preventDefault();
     onObstructTap();
@@ -3486,7 +3508,16 @@ function finishObstructRound(){
   qs(screenEl, '[data-obstruct-result]').classList.add('show');
 
   qs(screenEl, '#input-measures-obstruct').disabled = false;
-  qs(screenEl, '#btn-obstruct-action').disabled = true;
+  var actionBtn = qs(screenEl, '#btn-obstruct-action');
+  actionBtn.disabled = true;
+  qs(actionBtn, '[data-ob-action-label]').textContent = t('btnTapFinished');
+  if (rs.resultCooldownTimeoutId){ clearTimeout(rs.resultCooldownTimeoutId); }
+  rs.resultCooldownTimeoutId = setTimeout(function(){
+    rs.resultCooldownTimeoutId = null;
+    if (rs.phase !== 'done') return; /* その間に別の操作が行われていたら何もしない */
+    actionBtn.disabled = false;
+    qs(actionBtn, '[data-ob-action-label]').textContent = t('btnTapAgain');
+  }, 2000);
 
   recordHistory({
     type: 'obstruct',
@@ -3585,7 +3616,7 @@ function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorSegments){
   var bandRects = '';
   var bandLabels = '';
   if (distractorSegments && distractorSegments.length){
-    bandLabels += '<text x="' + (marginLeft + 2) + '" y="' + (marginTop + 10) + '" class="graph-band-caption" text-anchor="start">' + t('graphDistractorLabel') + '</text>';
+    bandLabels += '<text x="2" y="' + (marginTop + 10) + '" class="graph-band-caption" text-anchor="start">' + t('graphDistractorLabel') + '</text>';
     var segs = distractorSegments.filter(function(s){ return s.time < xMax; });
     for (var bi = 0; bi < segs.length; bi++){
       var xStart = Math.max(0, segs[bi].time);
@@ -3984,6 +4015,7 @@ function initEvents(){
       if (action === 'retry-tempokeep'){
         stopAllScheduledAudio();
         var rs = roundState.tempokeep;
+        if (rs.resultCooldownTimeoutId){ clearTimeout(rs.resultCooldownTimeoutId); rs.resultCooldownTimeoutId = null; }
         rs.phase = 'idle';
         rs.times = []; rs.tempos = []; rs.xTimes = [];
         renderTempoKeepScreen();
@@ -3992,6 +4024,7 @@ function initEvents(){
       if (action === 'retry-obstruct'){
         stopObstructAll();
         var rsOb = roundState.obstruct;
+        if (rsOb.resultCooldownTimeoutId){ clearTimeout(rsOb.resultCooldownTimeoutId); rsOb.resultCooldownTimeoutId = null; }
         rsOb.phase = 'idle';
         rsOb.times = []; rsOb.tempos = []; rsOb.xTimes = []; rsOb.distractorSegments = [];
         renderObstructScreen();
