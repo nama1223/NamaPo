@@ -343,6 +343,7 @@
   .reroll-row{
     display:flex;
     justify-content:center;
+    gap:10px;
   }
   .btn-reroll{
     padding:9px 16px;
@@ -350,6 +351,14 @@
     border-radius:999px;
     font-size:13px;
     color:var(--text-muted);
+    background:var(--bg-elevated);
+  }
+  .btn-open-presets{
+    padding:9px 16px;
+    border:1px solid var(--accent);
+    border-radius:999px;
+    font-size:13px;
+    color:var(--accent);
     background:var(--bg-elevated);
   }
   [data-submode="survival"] .reroll-row,
@@ -642,7 +651,13 @@
     gap:4px;
     padding:14px 0 2px;
   }
-  .target-display .reveal-label{ font-size:13px; }
+  .target-display .reveal-label{
+    font-size:13px;
+    max-width:100%;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
   .target-display .big-num{
     font-family:var(--font-display);
     font-size:44px;
@@ -683,7 +698,13 @@
     background:var(--bg-elevated);
     border:1px solid var(--border);
     border-radius:var(--radius-s);
-    touch-action:none;
+    touch-action:pan-x;
+    cursor:ns-resize;
+    transition:border-color 0.2s, background-color 0.2s;
+  }
+  .measures-row input[type="number"].touch-active{
+    border-color:var(--accent);
+    background-color:var(--bg-elevated-2);
   }
   .tap-wrap{
     display:flex;
@@ -1300,6 +1321,229 @@
     border:1px solid var(--border);
     color:var(--text-muted);
   }
+  /* ---------- 課題テンポ(プリセット)モーダル ---------- */
+  #presets-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:120;
+  }
+  #presets-backdrop.show{ display:flex; }
+  #presets-box{
+    width:100%;
+    max-width:440px;
+    max-height:88vh;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-l);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    overflow:hidden;
+  }
+  .presets-save-row{
+    display:flex;
+    gap:8px;
+  }
+  .presets-save-row input[type="text"]{
+    flex:1 1 auto;
+    min-width:0;
+    padding:10px 10px;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-s);
+    font-size:14px;
+  }
+  .presets-save-row input[type="number"]{
+    width:66px;
+    flex-shrink:0;
+    padding:10px 4px;
+    text-align:center;
+    font-family:var(--font-display);
+    font-weight:700;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-s);
+  }
+  .btn-preset-save{
+    flex-shrink:0;
+    padding:10px 14px;
+    border-radius:var(--radius-s);
+    background:var(--accent);
+    color:var(--correct-text);
+    font-weight:700;
+    font-size:13px;
+  }
+  .presets-error{
+    font-size:12px;
+    color:var(--incorrect-bg);
+    min-height:14px;
+    text-align:center;
+  }
+  .presets-search-row{
+    display:flex;
+    gap:6px;
+  }
+  .presets-search-box{
+    flex:2 1 0;
+    min-width:0;
+    display:flex;
+    align-items:center;
+    gap:4px;
+    padding:0 8px;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-s);
+  }
+  .presets-search-box .presets-search-icon{
+    font-size:13px;
+    opacity:0.6;
+    flex-shrink:0;
+  }
+  .presets-search-box input{
+    flex:1;
+    min-width:0;
+    border:none;
+    background:transparent;
+    padding:9px 2px;
+    font-size:13px;
+    color:var(--text);
+  }
+  .presets-search-box input:focus{ outline:none; }
+  .btn-preset-sort{
+    flex:1 1 0;
+    min-width:0;
+    padding:9px 2px;
+    border-radius:var(--radius-s);
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:12px;
+    font-weight:600;
+    white-space:nowrap;
+    overflow:hidden;
+    text-overflow:ellipsis;
+  }
+  .btn-preset-sort.active{
+    background:var(--accent);
+    color:var(--correct-text);
+    border-color:var(--accent);
+  }
+  .presets-list{
+    display:flex;
+    flex-direction:column;
+    gap:8px;
+    overflow-y:auto;
+    padding:2px;
+  }
+  .preset-empty{
+    text-align:center;
+    color:var(--text-muted);
+    font-size:13px;
+    padding:20px 0;
+  }
+  .preset-row{
+    display:flex;
+    align-items:stretch;
+    gap:8px;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    border-radius:var(--radius-m);
+    padding:8px 10px;
+  }
+  .preset-row.drag-over{
+    border-color:var(--accent);
+  }
+  .preset-row.dragging{
+    opacity:0.4;
+  }
+  .preset-drag-handle{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:20px;
+    flex-shrink:0;
+    color:var(--text-muted);
+    font-size:16px;
+    cursor:grab;
+    touch-action:none;
+  }
+  .preset-main{
+    flex:1;
+    min-width:0;
+    display:flex;
+    flex-direction:column;
+    gap:4px;
+  }
+  .preset-row-top{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .preset-name{
+    font-weight:700;
+    font-size:14px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .preset-rename-input{
+    flex:1;
+    min-width:0;
+    font-weight:700;
+    font-size:14px;
+    padding:2px 4px;
+    border:1px solid var(--accent);
+    border-radius:4px;
+    background:var(--bg-elevated);
+    color:var(--text);
+  }
+  .btn-preset-rename{
+    flex-shrink:0;
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:transparent;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--text-muted);
+  }
+  .preset-row-bottom{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .preset-tempo{
+    font-family:var(--font-display);
+    font-weight:700;
+    font-size:13px;
+    color:var(--accent);
+  }
+  .preset-row-actions{
+    display:flex;
+    gap:6px;
+  }
+  .btn-preset-dup, .btn-preset-del{
+    width:24px;
+    height:24px;
+    border-radius:50%;
+    background:transparent;
+    font-size:12px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:var(--text-muted);
+  }
+  .btn-preset-del{ color:var(--incorrect-bg); }
 </style>
 </head>
 <body>
@@ -1485,6 +1729,7 @@
       </div>
       <div class="reroll-row">
         <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
+        <button class="btn-open-presets" data-action="open-presets" type="button" data-i18n="presetsModalTitle"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1524,6 +1769,7 @@
       </div>
       <div class="reroll-row">
         <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
+        <button class="btn-open-presets" data-action="open-presets" type="button" data-i18n="presetsModalTitle"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1573,6 +1819,7 @@
       </div>
       <div class="reroll-row">
         <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
+        <button class="btn-open-presets" data-action="open-presets" type="button" data-i18n="presetsModalTitle"></button>
       </div>
       <div class="target-display">
         <div class="reveal-label" data-i18n="targetTempoLabel"></div>
@@ -1770,6 +2017,33 @@
   </div>
 </div>
 
+<div id="presets-backdrop">
+  <div id="presets-box" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title" data-i18n="presetsModalTitle"></div>
+      <button id="btn-presets-close" type="button" aria-label="close">✕</button>
+    </div>
+
+    <div class="presets-save-row">
+      <input id="input-preset-name" type="text" maxlength="20" data-i18n-placeholder="presetNamePlaceholder">
+      <input id="input-preset-tempo" type="number" inputmode="numeric" min="20" max="400" placeholder="BPM">
+      <button id="btn-preset-save" class="btn-preset-save" type="button" data-i18n="btnPresetSave"></button>
+    </div>
+    <div class="presets-error" data-presets-error></div>
+
+    <div class="presets-search-row">
+      <div class="presets-search-box">
+        <span class="presets-search-icon" aria-hidden="true">&#128269;</span>
+        <input id="input-preset-search" type="text" data-i18n-placeholder="presetSearchPlaceholder">
+      </div>
+      <button class="btn-preset-sort" data-sort="name" type="button"></button>
+      <button class="btn-preset-sort" data-sort="tempo" type="button"></button>
+    </div>
+
+    <div class="presets-list" data-presets-list></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -1783,6 +2057,10 @@ var MIN_TEMPO_LIST_LENGTH = 4;
 
 /* 採点方式: ◯(正解)/△(隣接テンポ)/✕(それ以外)の獲得ポイント */
 var POINTS = { correct: 8, near: 3, wrong: 1 };
+
+/* 課題テンポ(タップでトレーニング系で名前付きで保存できるテンポ設定) */
+var tempoPresets = []; // { id, name, tempo }
+var presetsModalState = { query: '', sortKey: null, sortDir: 'asc', targetType: null };
 
 var DIFFICULTY_WINDOW = { easy: 6, normal: 3, hard: 1 };
 
@@ -1856,6 +2134,16 @@ var I18N = {
     tempoListErrRange: '20〜400の範囲の整数を入力してください',
     tempoListErrDup: 'そのテンポはすでにリストにあります',
     confirmResetTempoList: 'お題テンポリストを初期状態に戻します。よろしいですか？',
+    presetsModalTitle: '課題テンポ',
+    btnPresetSave: '保存',
+    presetNamePlaceholder: '課題名',
+    presetSearchPlaceholder: '名前で検索',
+    presetSortName: '名前',
+    presetSortTempo: 'テンポ',
+    presetErrName: '名前を入力してください',
+    presetEmpty: 'まだ課題が保存されていません',
+    presetCopySuffix: 'のコピー',
+    confirmDeletePreset: 'この課題を削除します。よろしいですか？',
     settingsDataGroup: 'データ',
     settingsClearHistory: '履歴をすべて消去',
     btnTestPlay: '試聴',
@@ -1953,6 +2241,16 @@ var I18N = {
     tempoListErrRange: 'Enter a whole number between 20 and 400',
     tempoListErrDup: 'That tempo is already in the list',
     confirmResetTempoList: 'Reset the tempo list to its defaults. Continue?',
+    presetsModalTitle: 'Preset Tempos',
+    btnPresetSave: 'Save',
+    presetNamePlaceholder: 'Name',
+    presetSearchPlaceholder: 'Search by name',
+    presetSortName: 'Name',
+    presetSortTempo: 'Tempo',
+    presetErrName: 'Enter a name',
+    presetEmpty: 'No presets saved yet',
+    presetCopySuffix: ' copy',
+    confirmDeletePreset: 'Delete this preset?',
     settingsDataGroup: 'Data',
     settingsClearHistory: 'Clear all history',
     btnTestPlay: 'Play',
@@ -2009,9 +2307,9 @@ var state = {
 var roundState = {
   select: { tempo: null, streak: 0, choices: [], uiState: 'ready', lives: 3, questionNumber: 1 },
   input:  { tempo: null, streak: 0, uiState: 'ready', lives: 3, questionNumber: 1 },
-  tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false },
-  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, resultCooldownTimeoutId: null },
-  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorSegments: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null, resultCooldownTimeoutId: null }
+  tap:    { tempo: null, times: [], tempos: [], xTimes: [], finished: false, presetName: null },
+  tempokeep: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, resultCooldownTimeoutId: null, presetName: null },
+  obstruct: { tempo: null, measures: 2, tapSound: true, times: [], tempos: [], xTimes: [], distractorSegments: [], phase: 'idle', ignoreUntilMs: 0, expectedTaps: 8, countInTimeoutId: null, resultCooldownTimeoutId: null, presetName: null }
 };
 
 /* 進行中の聴き取りセッション(選択/入力モードの連続プレイを1件にまとめるため) */
@@ -2115,6 +2413,29 @@ function loadTempoListFromStorage(){
   } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
 }
 
+var STORAGE_KEY_PRESETS = 'namatempotrainer_presets_v1';
+
+function savePresetsToStorage(){
+  try {
+    localStorage.setItem(STORAGE_KEY_PRESETS, JSON.stringify(tempoPresets));
+  } catch (e){ /* ストレージ不可の環境では何もしない */ }
+}
+
+function loadPresetsFromStorage(){
+  try {
+    var raw = localStorage.getItem(STORAGE_KEY_PRESETS);
+    if (raw){
+      var parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)){
+        tempoPresets = parsed.filter(function(p){
+          return p && typeof p.id === 'string' && typeof p.name === 'string' &&
+            typeof p.tempo === 'number' && isFinite(p.tempo);
+        });
+      }
+    }
+  } catch (e){ /* ストレージ不可、または壊れたデータは無視 */ }
+}
+
 /* ==================================================================
    ユーティリティ
    ================================================================== */
@@ -2172,69 +2493,353 @@ function commitManualTempo(type, value){
   else if (type === 'obstruct') startObstructRound(value);
 }
 
-/* 「小節数」入力欄: 縦にスワイプ(ドラッグ)すると時間基準(150msごとに1変更)で数値を増減させる。
-   上方向スワイプで増加、下方向スワイプで減少。閾値内の小さな動きはタップでの手動入力を妨げないよう無視する */
-function enableMeasuresSwipe(inputEl){
-  var pointerId = null;
-  var startY = 0;
-  var direction = 0;
-  var intervalId = null;
-  var dragging = false;
-  var lastMoveTime = 0;
-  var stillnessMs = 200; /* この時間以上pointermoveが来なければ「指が止まった」とみなし変化を止める */
+/* HTMLへの埋め込み用に最低限のエスケープを行う(課題名はユーザーが自由に入力する文字列のため) */
+function escapeHtml(str){
+  return String(str).replace(/[&<>"']/g, function(ch){
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch];
+  });
+}
 
-  function tick(){
-    if (direction === 0) return;
-    if (Date.now() - lastMoveTime > stillnessMs) return; /* 指が止まっている間は変化させない */
-    var min = parseInt(inputEl.min, 10);
-    var max = parseInt(inputEl.max, 10);
-    var v = parseInt(inputEl.value, 10);
-    if (isNaN(v)) v = min;
-    v = Math.max(min, Math.min(max, v + direction));
-    inputEl.value = v;
-    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+/* ---- 課題テンポ(プリセット)のCRUD ---- */
+function addPreset(name, tempo){
+  var trimmed = (name || '').trim();
+  if (!trimmed) return { ok: false, reason: 'name' };
+  if (isNaN(tempo) || tempo < 20 || tempo > 400) return { ok: false, reason: 'range' };
+  tempoPresets.push({ id: 'p' + Date.now() + Math.floor(Math.random() * 1000), name: trimmed, tempo: Math.round(tempo) });
+  savePresetsToStorage();
+  return { ok: true };
+}
+
+function renamePreset(id, newName){
+  var trimmed = (newName || '').trim();
+  if (!trimmed) return { ok: false };
+  var p = tempoPresets.filter(function(x){ return x.id === id; })[0];
+  if (!p) return { ok: false };
+  p.name = trimmed;
+  savePresetsToStorage();
+  return { ok: true };
+}
+
+function duplicatePreset(id){
+  var idx = -1;
+  for (var i = 0; i < tempoPresets.length; i++){
+    if (tempoPresets[i].id === id){ idx = i; break; }
+  }
+  if (idx === -1) return;
+  var p = tempoPresets[idx];
+  var copy = { id: 'p' + Date.now() + Math.floor(Math.random() * 1000), name: p.name + t('presetCopySuffix'), tempo: p.tempo };
+  tempoPresets.splice(idx + 1, 0, copy);
+  savePresetsToStorage();
+}
+
+function deletePreset(id){
+  tempoPresets = tempoPresets.filter(function(x){ return x.id !== id; });
+  savePresetsToStorage();
+}
+
+function reorderPreset(fromIndex, toIndex){
+  if (fromIndex === toIndex) return;
+  var item = tempoPresets.splice(fromIndex, 1)[0];
+  tempoPresets.splice(toIndex, 0, item);
+  savePresetsToStorage();
+}
+
+function getFilteredSortedPresets(){
+  var list = tempoPresets.slice();
+  var q = presetsModalState.query.trim().toLowerCase();
+  if (q){
+    list = list.filter(function(p){ return p.name.toLowerCase().indexOf(q) !== -1; });
+  }
+  if (presetsModalState.sortKey){
+    var key = presetsModalState.sortKey;
+    list.sort(function(a, b){
+      var av = key === 'name' ? a.name.toLowerCase() : a.tempo;
+      var bv = key === 'name' ? b.name.toLowerCase() : b.tempo;
+      if (av < bv) return -1;
+      if (av > bv) return 1;
+      return 0;
+    });
+    if (presetsModalState.sortDir === 'desc') list.reverse();
+  }
+  return list;
+}
+
+/* 課題テンポをタップでトレーニング系の画面に読み込む */
+function loadPreset(type, preset){
+  roundState[type].presetName = preset.name;
+  commitManualTempo(type, preset.tempo);
+}
+
+function findPresetIndexById(id){
+  for (var i = 0; i < tempoPresets.length; i++){
+    if (tempoPresets[i].id === id) return i;
+  }
+  return -1;
+}
+
+function renderPresetSortButtons(){
+  qsa(document, '.btn-preset-sort').forEach(function(btn){
+    var key = btn.getAttribute('data-sort');
+    var label = key === 'name' ? t('presetSortName') : t('presetSortTempo');
+    if (presetsModalState.sortKey === key){
+      label += presetsModalState.sortDir === 'asc' ? ' \u25b2' : ' \u25bc';
+      btn.classList.add('active');
+    } else {
+      btn.classList.remove('active');
+    }
+    btn.textContent = label;
+  });
+}
+
+function renderPresetsList(){
+  var backdrop = document.getElementById('presets-backdrop');
+  var listEl = qs(backdrop, '[data-presets-list]');
+  var list = getFilteredSortedPresets();
+  var canReorder = !presetsModalState.query && !presetsModalState.sortKey;
+
+  if (list.length === 0){
+    listEl.innerHTML = '<div class="preset-empty">' + t('presetEmpty') + '</div>';
+    return;
   }
 
-  function onPointerDown(evt){
-    if (pointerId !== null) return;
-    pointerId = evt.pointerId;
-    startY = evt.clientY;
-    direction = 0;
-    dragging = false;
-    lastMoveTime = 0;
-    if (intervalId === null) intervalId = setInterval(tick, 150);
+  listEl.innerHTML = '';
+  list.forEach(function(p){
+    var row = document.createElement('div');
+    row.className = 'preset-row';
+    row.setAttribute('data-preset-id', p.id);
+    row.innerHTML =
+      '<div class="preset-drag-handle" aria-hidden="true">' + (canReorder ? '\u2630' : '') + '</div>' +
+      '<div class="preset-main">' +
+        '<div class="preset-row-top">' +
+          '<span class="preset-name">' + escapeHtml(p.name) + '</span>' +
+          '<button class="btn-preset-rename" type="button" aria-label="rename">\u270e</button>' +
+        '</div>' +
+        '<div class="preset-row-bottom">' +
+          '<span class="preset-tempo">' + formatTempo(p.tempo) + '</span>' +
+          '<div class="preset-row-actions">' +
+            '<button class="btn-preset-dup" type="button" aria-label="duplicate">\u29c9</button>' +
+            '<button class="btn-preset-del" type="button" aria-label="delete">\ud83d\uddd1</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    row.addEventListener('click', function(evt){
+      if (evt.target.closest('.btn-preset-rename, .btn-preset-dup, .btn-preset-del, .preset-drag-handle')) return;
+      var type = presetsModalState.targetType;
+      if (type) loadPreset(type, p);
+      closePresetsModal();
+    });
+
+    row.querySelector('.btn-preset-rename').addEventListener('click', function(evt){
+      evt.stopPropagation();
+      startRenamePreset(row, p);
+    });
+    row.querySelector('.btn-preset-dup').addEventListener('click', function(evt){
+      evt.stopPropagation();
+      duplicatePreset(p.id);
+      renderPresetsList();
+    });
+    row.querySelector('.btn-preset-del').addEventListener('click', function(evt){
+      evt.stopPropagation();
+      confirmDeletePresetEntry(p);
+    });
+
+    if (canReorder){
+      var handle = row.querySelector('.preset-drag-handle');
+      handle.addEventListener('pointerdown', function(evt){
+        startPresetDrag(evt, row, p, listEl);
+      });
+    }
+
+    listEl.appendChild(row);
+  });
+}
+
+/* 課題名のインライン編集(タップ編集と同じ「その場でinputに差し替える」方式) */
+function startRenamePreset(row, p){
+  var nameSpan = row.querySelector('.preset-name');
+  if (!nameSpan) return;
+  var input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'preset-rename-input';
+  input.maxLength = 20;
+  input.value = p.name;
+  nameSpan.replaceWith(input);
+  input.focus();
+  input.select();
+
+  var done = false;
+  function commit(){
+    if (done) return;
+    done = true;
+    var newName = input.value.trim();
+    if (newName && newName !== p.name){
+      renamePreset(p.id, newName);
+    }
+    renderPresetsList();
   }
-  function onPointerMove(evt){
-    if (evt.pointerId !== pointerId) return;
-    lastMoveTime = Date.now(); /* pointermoveが来ている=指が動いているという事実を毎回記録 */
-    var dy = evt.clientY - startY;
-    var threshold = 6; /* 指の小さなブレを無視するための遊び(=タップでのフォーカスは妨げない) */
-    var newDirection = 0;
-    if (dy < -threshold) newDirection = 1;       /* 上へスワイプ = 増加 */
-    else if (dy > threshold) newDirection = -1;  /* 下へスワイプ = 減少 */
-    if (newDirection !== 0){
-      evt.preventDefault(); /* ドラッグと判定できた時点でスクロール/pull-to-refreshを止める */
-      if (!dragging){
-        dragging = true;
-        if (inputEl.blur) inputEl.blur(); /* ドラッグ確定後はキーボード表示を避ける */
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', function(evt){
+    if (evt.key === 'Enter'){ input.blur(); }
+    else if (evt.key === 'Escape'){ done = true; renderPresetsList(); }
+  });
+}
+
+function confirmDeletePresetEntry(p){
+  showConfirmModal('confirmDeletePreset', function(){
+    deletePreset(p.id);
+    renderPresetsList();
+  });
+}
+
+/* ドラッグハンドルでの並べ替え。HTML5 Drag and Dropはタッチ環境で不安定なため、
+   pointerイベントで座標を追いながら手動でドロップ先を判定する */
+function startPresetDrag(evt, row, p, listEl){
+  evt.preventDefault();
+  var startIndex = findPresetIndexById(p.id);
+  if (startIndex === -1) return;
+  row.classList.add('dragging');
+  var pointerId = evt.pointerId;
+
+  function hitTestRow(clientY){
+    var rows = qsa(listEl, '.preset-row');
+    for (var i = 0; i < rows.length; i++){
+      var rect = rows[i].getBoundingClientRect();
+      if (clientY >= rect.top && clientY <= rect.bottom) return rows[i];
+    }
+    return null;
+  }
+
+  function onMove(mvEvt){
+    if (mvEvt.pointerId !== pointerId) return;
+    mvEvt.preventDefault();
+    qsa(listEl, '.preset-row').forEach(function(r){ r.classList.remove('drag-over'); });
+    var target = hitTestRow(mvEvt.clientY);
+    if (target && target !== row) target.classList.add('drag-over');
+  }
+
+  function onUp(upEvt){
+    if (upEvt.pointerId !== pointerId) return;
+    document.removeEventListener('pointermove', onMove);
+    document.removeEventListener('pointerup', onUp);
+    document.removeEventListener('pointercancel', onUp);
+    row.classList.remove('dragging');
+    qsa(listEl, '.preset-row').forEach(function(r){ r.classList.remove('drag-over'); });
+    var target = hitTestRow(upEvt.clientY);
+    if (target && target !== row){
+      var toIndex = findPresetIndexById(target.getAttribute('data-preset-id'));
+      if (toIndex !== -1){
+        reorderPreset(startIndex, toIndex);
+        renderPresetsList();
       }
     }
-    direction = newDirection;
-  }
-  function onPointerUp(evt){
-    if (evt.pointerId !== pointerId) return;
-    pointerId = null;
-    direction = 0;
-    dragging = false;
-    if (intervalId !== null){ clearInterval(intervalId); intervalId = null; }
   }
 
-  /* pointermoveでのpreventDefault()を確実に効かせるため、passive:falseを明示する
-     (パッシブ扱いのままだとpreventDefault()が無視され、下スワイプがブラウザのpull-to-refreshに奪われる環境がある) */
-  inputEl.addEventListener('pointerdown', onPointerDown, { passive: false });
-  inputEl.addEventListener('pointermove', onPointerMove, { passive: false });
-  inputEl.addEventListener('pointerup', onPointerUp, { passive: false });
-  inputEl.addEventListener('pointercancel', onPointerUp, { passive: false });
+  document.addEventListener('pointermove', onMove, { passive: false });
+  document.addEventListener('pointerup', onUp);
+  document.addEventListener('pointercancel', onUp);
+}
+
+function openPresetsModal(type){
+  presetsModalState.targetType = type;
+  presetsModalState.query = '';
+  presetsModalState.sortKey = null;
+  presetsModalState.sortDir = 'asc';
+  var backdrop = document.getElementById('presets-backdrop');
+  qs(backdrop, '[data-presets-error]').textContent = '';
+  document.getElementById('input-preset-search').value = '';
+  document.getElementById('input-preset-name').value = '';
+  var tempoInput = document.getElementById('input-preset-tempo');
+  tempoInput.value = roundState[type] ? roundState[type].tempo : '';
+  renderPresetSortButtons();
+  renderPresetsList();
+  backdrop.classList.add('show');
+}
+
+function closePresetsModal(){
+  document.getElementById('presets-backdrop').classList.remove('show');
+}
+
+/* ホイール／縦スワイプで値を上下操作する共通ユーティリティ(scroll-and-swipe-spec.md準拠)。
+   移動量(またはホイール量)を貯めて閾値を超えたら1段階だけ動かし、その時点で基準点をリセットする。
+   これにより「一定量スワイプ／スクロールするたびにカチッと1段階動く」操作感になり、連続的な変動を防ぐ。
+   el   : 対象のDOM要素
+   actUp: 上方向(値を増やす等)の操作を実行する関数
+   actDn: 下方向(値を減らす等)の操作を実行する関数
+   sens : 感度の倍率(大きいほど「重く」＝多く動かさないと反応しない。既定1) */
+function bindScrollSwipe(el, actUp, actDn, sens){
+  if (!el) return;
+  sens = sens || 1;
+  var wAcc = 0, tY = 0, swipeLocked = false;
+
+  function doUp(){ actUp(); playScrollSwipeTick(); }
+  function doDn(){ actDn(); playScrollSwipeTick(); }
+
+  /* ホイール操作 */
+  el.addEventListener('wheel', function(evt){
+    evt.preventDefault(); /* ページスクロールを即座にブロック */
+    wAcc += evt.deltaY;
+    var threshold = 50 * sens;
+    if (wAcc > threshold){ doDn(); wAcc = 0; }
+    else if (wAcc < -threshold){ doUp(); wAcc = 0; }
+  }, { passive: false });
+
+  /* タッチスワイプ操作 */
+  el.addEventListener('touchstart', function(evt){
+    if (evt.target.tagName === 'SELECT' || (evt.target.closest && evt.target.closest('select'))){
+      swipeLocked = true;
+      return;
+    }
+    swipeLocked = false;
+    tY = evt.touches[0].clientY;
+    el.classList.add('touch-active'); /* 操作中である見た目のフィードバック */
+  }, { passive: true });
+
+  el.addEventListener('touchmove', function(evt){
+    if (swipeLocked) return;
+    var cY = evt.touches[0].clientY;
+    var diff = tY - cY; /* 上スワイプで正の値 */
+    var threshold = 20 * sens;
+    if (Math.abs(diff) > threshold){
+      if (diff > 0) doUp(); else doDn();
+      tY = cY; /* 基準点を更新(連続的な変動を防ぎ、1段階ずつ発火させる) */
+      if (evt.cancelable) evt.preventDefault(); /* ブラウザのスクロール／pull-to-refreshを阻止 */
+    }
+  }, { passive: false });
+
+  el.addEventListener('touchend', function(){
+    el.classList.remove('touch-active');
+    swipeLocked = false;
+  });
+}
+
+/* スクロール＆スワイプ操作が1段階動くたびに鳴らす短い操作音 */
+function playScrollSwipeTick(){
+  var ctx = ensureAudioContext();
+  var t0 = ctx.currentTime;
+  var osc = ctx.createOscillator();
+  var gain = ctx.createGain();
+  osc.type = 'square';
+  osc.frequency.setValueAtTime(900, t0);
+  osc.connect(gain).connect(ctx.destination);
+  gain.gain.setValueAtTime(0.12 * state.settings.clickVolume + 0.001, t0);
+  gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.05);
+  osc.start(t0);
+  osc.stop(t0 + 0.06);
+  trackNode(osc);
+}
+
+/* 「小節数」入力欄の増減 */
+function adjustMeasures(type, delta){
+  var inputId = type === 'tempokeep' ? 'input-measures' : 'input-measures-obstruct';
+  var input = document.getElementById(inputId);
+  var min = parseInt(input.min, 10);
+  var max = parseInt(input.max, 10);
+  var v = parseInt(input.value, 10);
+  if (isNaN(v)) v = min;
+  v = Math.max(min, Math.min(max, v + delta));
+  input.value = v;
+  input.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
 
@@ -2268,6 +2873,7 @@ function enableTargetTapEdit(screenId, containerSelector, type){
       /* 先に元の表示構造へ戻す(各モードのrender関数がdata-target系の要素を参照するため) */
       container.innerHTML = original;
       if (!isNaN(v) && v >= 20 && v <= 400 && v !== current){
+        rs.presetName = null;
         commitManualTempo(type, v);
       }
     }
@@ -2417,6 +3023,10 @@ function applyI18n(){
     var key = el.getAttribute('data-i18n');
     el.textContent = t(key);
   });
+  qsa(document, '[data-i18n-placeholder]').forEach(function(el){
+    var key = el.getAttribute('data-i18n-placeholder');
+    el.placeholder = t(key);
+  });
   document.documentElement.lang = state.lang;
   var langBtn = document.getElementById('btn-lang');
   langBtn.textContent = state.lang === 'ja' ? 'EN' : '日本語';
@@ -2435,6 +3045,18 @@ function refreshDynamicForScreen(){
     if (roundState.input.uiState === 'revealed'){ renderRevealText('mode2'); }
   }
   if (state.screen === 'settings'){ renderSettingsUI(); }
+  if (state.screen === 'mode3'){
+    var rsTap = roundState.tap;
+    qs(document.getElementById('screen-mode3'), '.reveal-label').textContent = rsTap.presetName || t('targetTempoLabel');
+  }
+  if (state.screen === 'mode4'){
+    var rsTk = roundState.tempokeep;
+    qs(document.getElementById('screen-mode4'), '.reveal-label').textContent = rsTk.presetName || t('targetTempoLabel');
+  }
+  if (state.screen === 'mode5'){
+    var rsOb2 = roundState.obstruct;
+    qs(document.getElementById('screen-mode5'), '.reveal-label').textContent = rsOb2.presetName || t('targetTempoLabel');
+  }
 }
 
 /* ==================================================================
@@ -3143,6 +3765,7 @@ function startTapRound(manualTempo){
 }
 
 function rerollTap(){
+  roundState.tap.presetName = null;
   startTapRound();
 }
 
@@ -3157,6 +3780,7 @@ function resetTapAttempt(){
 function renderTapScreen(){
   var screenEl = document.getElementById('screen-mode3');
   var rs = roundState.tap;
+  qs(screenEl, '.reveal-label').textContent = rs.presetName || t('targetTempoLabel');
   qs(screenEl, '[data-target-value]').textContent = formatTempo(rs.tempo);
   qs(screenEl, '[data-tap-count]').textContent = '0';
   qs(screenEl, '[data-tap-result]').classList.remove('show');
@@ -3231,12 +3855,14 @@ function startTempoKeepRound(manualTempo){
 }
 
 function rerollTempoKeep(){
+  roundState.tempokeep.presetName = null;
   startTempoKeepRound();
 }
 
 function renderTempoKeepScreen(){
   var screenEl = document.getElementById('screen-mode4');
   var rs = roundState.tempokeep;
+  qs(screenEl, '.reveal-label').textContent = rs.presetName || t('targetTempoLabel');
   qs(screenEl, '[data-tk-target-main]').textContent = formatTempo(rs.tempo);
   var measuresInput = qs(screenEl, '#input-measures');
   measuresInput.value = rs.measures;
@@ -3383,12 +4009,14 @@ function startObstructRound(manualTempo){
 }
 
 function rerollObstruct(){
+  roundState.obstruct.presetName = null;
   startObstructRound();
 }
 
 function renderObstructScreen(){
   var screenEl = document.getElementById('screen-mode5');
   var rs = roundState.obstruct;
+  qs(screenEl, '.reveal-label').textContent = rs.presetName || t('targetTempoLabel');
   qs(screenEl, '[data-ob-target-main]').textContent = formatTempo(rs.tempo);
   var measuresInput = qs(screenEl, '#input-measures-obstruct');
   measuresInput.value = rs.measures;
@@ -3971,6 +4599,10 @@ function initEvents(){
         else if (modeType === 'obstruct'){ rerollObstruct(); }
         return;
       }
+      if (action === 'open-presets'){
+        openPresetsModal(modeType);
+        return;
+      }
       if (action === 'next'){
         if (modeType === 'select' || modeType === 'input'){
           roundState[modeType].questionNumber++;
@@ -4064,7 +4696,7 @@ function initEvents(){
       roundState.tempokeep.measures = Math.min(16, v);
     }
   });
-  enableMeasuresSwipe(inputMeasures);
+  bindScrollSwipe(inputMeasures, function(){ adjustMeasures('tempokeep', 1); }, function(){ adjustMeasures('tempokeep', -1); }, 2);
 
   document.getElementById('toggle-tk-tapsound').addEventListener('change', function(){
     roundState.tempokeep.tapSound = this.checked;
@@ -4077,7 +4709,7 @@ function initEvents(){
       roundState.obstruct.measures = Math.min(16, v);
     }
   });
-  enableMeasuresSwipe(inputMeasuresObstruct);
+  bindScrollSwipe(inputMeasuresObstruct, function(){ adjustMeasures('obstruct', 1); }, function(){ adjustMeasures('obstruct', -1); }, 2);
 
   document.getElementById('toggle-obstruct-tapsound').addEventListener('change', function(){
     roundState.obstruct.tapSound = this.checked;
@@ -4180,6 +4812,48 @@ function initEvents(){
     });
   });
 
+  document.getElementById('btn-presets-close').addEventListener('click', closePresetsModal);
+  document.getElementById('presets-backdrop').addEventListener('click', function(evt){
+    if (evt.target === this) closePresetsModal();
+  });
+
+  document.getElementById('btn-preset-save').addEventListener('click', function(){
+    var nameInput = document.getElementById('input-preset-name');
+    var tempoInput = document.getElementById('input-preset-tempo');
+    var errEl = qs(document.getElementById('presets-backdrop'), '[data-presets-error]');
+    var tempo = parseInt(tempoInput.value, 10);
+    var res = addPreset(nameInput.value, tempo);
+    if (res.ok){
+      nameInput.value = '';
+      errEl.textContent = '';
+      renderPresetsList();
+    } else {
+      errEl.textContent = res.reason === 'name' ? t('presetErrName') : t('tempoListErrRange');
+    }
+  });
+  document.getElementById('input-preset-name').addEventListener('keydown', function(evt){
+    if (evt.key === 'Enter') document.getElementById('btn-preset-save').click();
+  });
+
+  document.getElementById('input-preset-search').addEventListener('input', function(){
+    presetsModalState.query = this.value;
+    renderPresetsList();
+  });
+
+  qsa(document, '.btn-preset-sort').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      var key = this.getAttribute('data-sort');
+      if (presetsModalState.sortKey === key){
+        presetsModalState.sortDir = presetsModalState.sortDir === 'asc' ? 'desc' : 'asc';
+      } else {
+        presetsModalState.sortKey = key;
+        presetsModalState.sortDir = 'asc';
+      }
+      renderPresetSortButtons();
+      renderPresetsList();
+    });
+  });
+
   window.addEventListener('beforeinstallprompt', function(evt){
     evt.preventDefault();
     deferredInstallPrompt = evt;
@@ -4268,6 +4942,7 @@ function initPendulumMotion(){
    ================================================================== */
 function init(){
   loadTempoListFromStorage();
+  loadPresetsFromStorage();
   loadSettingsFromStorage();
   loadHistoryFromStorage();
   applyI18n();
