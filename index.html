@@ -1152,13 +1152,22 @@
     gap:14px;
     overflow-y:auto;
   }
-  #modal-box .modal-head{
+  .modal-head{
     display:flex;
     align-items:center;
     justify-content:space-between;
+    gap:10px;
   }
-  #modal-box .modal-title{ font-size:15px; font-weight:700; }
-  #btn-modal-close{
+  .modal-title{
+    font-size:15px;
+    font-weight:700;
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+  }
+  .modal-head button[id$="-close"]{
+    flex-shrink:0;
     width:30px;
     height:30px;
     border-radius:50%;
@@ -1415,6 +1424,19 @@
     color:var(--text);
   }
   .presets-search-box input:focus{ outline:none; }
+  .btn-preset-search-clear{
+    display:none;
+    flex-shrink:0;
+    width:20px;
+    height:20px;
+    border-radius:50%;
+    background:transparent;
+    color:var(--incorrect-bg);
+    font-size:11px;
+    align-items:center;
+    justify-content:center;
+  }
+  .btn-preset-search-clear.show{ display:flex; }
   .btn-preset-sort{
     flex:1 1 0;
     min-width:0;
@@ -2020,7 +2042,7 @@
 <div id="presets-backdrop">
   <div id="presets-box" role="dialog" aria-modal="true">
     <div class="modal-head">
-      <div class="modal-title" data-i18n="presetsModalTitle"></div>
+      <div class="modal-title" data-i18n="presetsModalHeading"></div>
       <button id="btn-presets-close" type="button" aria-label="close">✕</button>
     </div>
 
@@ -2035,6 +2057,7 @@
       <div class="presets-search-box">
         <span class="presets-search-icon" aria-hidden="true">&#128269;</span>
         <input id="input-preset-search" type="text" data-i18n-placeholder="presetSearchPlaceholder">
+        <button id="btn-preset-search-clear" class="btn-preset-search-clear" type="button" aria-label="clear">&#10005;</button>
       </div>
       <button class="btn-preset-sort" data-sort="name" type="button"></button>
       <button class="btn-preset-sort" data-sort="tempo" type="button"></button>
@@ -2135,6 +2158,7 @@ var I18N = {
     tempoListErrDup: 'そのテンポはすでにリストにあります',
     confirmResetTempoList: 'お題テンポリストを初期状態に戻します。よろしいですか？',
     presetsModalTitle: '課題テンポ',
+    presetsModalHeading: '課題テンポ - テンポの保存と読み込み',
     btnPresetSave: '保存',
     presetNamePlaceholder: '課題名',
     presetSearchPlaceholder: '名前で検索',
@@ -2242,6 +2266,7 @@ var I18N = {
     tempoListErrDup: 'That tempo is already in the list',
     confirmResetTempoList: 'Reset the tempo list to its defaults. Continue?',
     presetsModalTitle: 'Preset Tempos',
+    presetsModalHeading: 'Preset Tempos - Save & Load',
     btnPresetSave: 'Save',
     presetNamePlaceholder: 'Name',
     presetSearchPlaceholder: 'Search by name',
@@ -2740,6 +2765,12 @@ function startPresetDrag(evt, row, p, listEl){
   document.addEventListener('pointercancel', onUp);
 }
 
+function updatePresetSearchClearButton(){
+  var input = document.getElementById('input-preset-search');
+  var btn = document.getElementById('btn-preset-search-clear');
+  btn.classList.toggle('show', input.value.length > 0);
+}
+
 function openPresetsModal(type){
   presetsModalState.targetType = type;
   presetsModalState.query = '';
@@ -2751,6 +2782,7 @@ function openPresetsModal(type){
   document.getElementById('input-preset-name').value = '';
   var tempoInput = document.getElementById('input-preset-tempo');
   tempoInput.value = roundState[type] ? roundState[type].tempo : '';
+  updatePresetSearchClearButton();
   renderPresetSortButtons();
   renderPresetsList();
   backdrop.classList.add('show');
@@ -3295,29 +3327,54 @@ function triggerVibrate(){
   }
 }
 
-/* 予約済みのビート演出(setTimeout)を追跡し、まとめてキャンセルできるようにする。
-   これがないと、音声を停止してもフラッシュ/バイブ/パルスだけ予約通り発火し続けてしまう。 */
-var pendingBeatEffectTimeouts = [];
+/* 予約済みのビート演出を追跡し、まとめてキャンセルできるようにする。
+   これがないと、音声を停止してもフラッシュ/バイブ/パルスだけ予約通り発火し続けてしまう。
+   setTimeoutではなくAudioContextの時刻(audioCtx.currentTime)をrequestAnimationFrameで
+   継続的に監視して発火させる方式。setTimeoutはメインスレッドの混雑や省電力機能の影響で
+   ずれが生じやすいが、audioCtx.currentTimeは音声ハードウェアの時計を基準にしており、
+   これをrAF(画面更新のたびに実行される)で監視することで、setTimeoutの遅延に振り回されず
+   音とのズレを画面更新間隔(端末により異なるが概ね16〜17ms程度)まで抑えられる */
+var pendingBeatEffects = [];
+var beatEffectsRafId = null;
 
-/* アプリが主導する拍(自動再生)にビジュアル/フラッシュ/バイブを同期させる */
-function scheduleBeatEffects(delayMs, pulseEl){
-  var timeoutId = setTimeout(function(){
-    var idx = pendingBeatEffectTimeouts.indexOf(timeoutId);
-    if (idx >= 0) pendingBeatEffectTimeouts.splice(idx, 1);
-    if (pulseEl){
-      pulseEl.classList.remove('beat');
-      void pulseEl.offsetWidth;
-      pulseEl.classList.add('beat');
+/* アプリが主導する拍(自動再生)にビジュアル/フラッシュ/バイブを同期させる。
+   targetCtxTimeはaudioCtx.currentTimeと同じ時間軸の絶対時刻(秒)で指定する */
+function scheduleBeatEffects(targetCtxTime, pulseEl){
+  pendingBeatEffects.push({ targetTime: targetCtxTime, pulseEl: pulseEl });
+  if (beatEffectsRafId === null){
+    beatEffectsRafId = requestAnimationFrame(beatEffectsTick);
+  }
+}
+
+function beatEffectsTick(){
+  var ctx = state.audioCtx;
+  var now = ctx ? ctx.currentTime : 0;
+  for (var i = pendingBeatEffects.length - 1; i >= 0; i--){
+    if (now >= pendingBeatEffects[i].targetTime){
+      fireBeatEffect(pendingBeatEffects[i].pulseEl);
+      pendingBeatEffects.splice(i, 1);
     }
-    if (state.settings.flash) triggerFlash();
-    if (state.settings.vibrate) triggerVibrate();
-  }, Math.max(0, delayMs));
-  pendingBeatEffectTimeouts.push(timeoutId);
+  }
+  if (pendingBeatEffects.length > 0){
+    beatEffectsRafId = requestAnimationFrame(beatEffectsTick);
+  } else {
+    beatEffectsRafId = null;
+  }
+}
+
+function fireBeatEffect(pulseEl){
+  if (pulseEl){
+    pulseEl.classList.remove('beat');
+    void pulseEl.offsetWidth;
+    pulseEl.classList.add('beat');
+  }
+  if (state.settings.flash) triggerFlash();
+  if (state.settings.vibrate) triggerVibrate();
 }
 
 function cancelPendingBeatEffects(){
-  pendingBeatEffectTimeouts.forEach(function(id){ clearTimeout(id); });
-  pendingBeatEffectTimeouts = [];
+  pendingBeatEffects = [];
+  if (beatEffectsRafId !== null){ cancelAnimationFrame(beatEffectsRafId); beatEffectsRafId = null; }
   document.documentElement.classList.remove('flash-active');
 }
 
@@ -3331,7 +3388,7 @@ function playTempoPreview(tempo, screenEl){
   for (var i = 0; i < 8; i++){
     var tm = startTime + i * interval;
     scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects((startDelay + i * interval) * 1000, pulseEl);
+    scheduleBeatEffects(tm, pulseEl);
   }
 }
 
@@ -3350,12 +3407,10 @@ function scheduleContinuousBatch(){
   if (!continuousPlayback.active) return;
   var ctx = state.audioCtx;
   var batchSize = 4;
-  var nowCtx = ctx.currentTime;
   for (var i = 0; i < batchSize; i++){
     var tm = continuousPlayback.ctxTime + i * continuousPlayback.interval;
     scheduleClick(ctx, tm, { accent: false });
-    var delayMs = (tm - nowCtx) * 1000;
-    scheduleBeatEffects(delayMs, continuousPlayback.pulseEl);
+    scheduleBeatEffects(tm, continuousPlayback.pulseEl);
   }
   var batchDurationMs = batchSize * continuousPlayback.interval * 1000;
   continuousPlayback.ctxTime += batchSize * continuousPlayback.interval;
@@ -3394,8 +3449,9 @@ function toggleTestPlay(){
   var interval = 60 / TEST_PLAY_TEMPO;
   var startTime = ctx.currentTime + startDelay;
   for (var i = 0; i < 8; i++){
-    scheduleClick(ctx, startTime + i * interval, { accent: i === 0 });
-    scheduleBeatEffects((startDelay + i * interval) * 1000, null);
+    var tm = startTime + i * interval;
+    scheduleClick(ctx, tm, { accent: i === 0 });
+    scheduleBeatEffects(tm, null);
   }
   state.testPlaying = true;
   renderTestPlayButton(btn);
@@ -3905,7 +3961,7 @@ function startTempoKeepCountIn(){
   for (var i = 0; i < 4; i++){
     var tm = startTime + i * interval;
     scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects((startDelay + i * interval) * 1000, actionBtn);
+    scheduleBeatEffects(tm, actionBtn);
   }
 
   var nowPerf = performance.now();
@@ -4059,7 +4115,7 @@ function startObstructCountIn(){
   for (var i = 0; i < 4; i++){
     var tm = startTime + i * interval;
     scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects((startDelay + i * interval) * 1000, actionBtn);
+    scheduleBeatEffects(tm, actionBtn);
   }
 
   var nowPerf = performance.now();
@@ -4190,8 +4246,7 @@ function scheduleObstructBatch(targetTempo){
     }
     var tm = obstructPlayback.ctxTime;
     scheduleClick(ctx, tm, { accent: false });
-    var delayMs = (tm - nowCtx) * 1000;
-    scheduleBeatEffects(delayMs, obstructPlayback.pulseEl);
+    scheduleBeatEffects(tm, obstructPlayback.pulseEl);
     obstructPlayback.ctxTime += 60 / obstructPlayback.currentTempo;
     obstructPlayback.beatsAtCurrentTempo++;
   }
@@ -4837,16 +4892,28 @@ function initEvents(){
 
   document.getElementById('input-preset-search').addEventListener('input', function(){
     presetsModalState.query = this.value;
+    updatePresetSearchClearButton();
     renderPresetsList();
+  });
+  document.getElementById('btn-preset-search-clear').addEventListener('click', function(){
+    var input = document.getElementById('input-preset-search');
+    input.value = '';
+    presetsModalState.query = '';
+    updatePresetSearchClearButton();
+    renderPresetsList();
+    input.focus();
   });
 
   qsa(document, '.btn-preset-sort').forEach(function(btn){
     btn.addEventListener('click', function(){
       var key = this.getAttribute('data-sort');
-      if (presetsModalState.sortKey === key){
-        presetsModalState.sortDir = presetsModalState.sortDir === 'asc' ? 'desc' : 'asc';
-      } else {
+      if (presetsModalState.sortKey !== key){
         presetsModalState.sortKey = key;
+        presetsModalState.sortDir = 'asc';
+      } else if (presetsModalState.sortDir === 'asc'){
+        presetsModalState.sortDir = 'desc';
+      } else {
+        presetsModalState.sortKey = null; /* 3回目でソート解除、並べ替え可能な状態に戻す */
         presetsModalState.sortDir = 'asc';
       }
       renderPresetSortButtons();
