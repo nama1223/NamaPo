@@ -212,12 +212,37 @@
     gap:10px;
     margin-bottom:20px;
   }
+  .category-title-row{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    padding-left:2px;
+  }
   .category-title{
     font-size:13px;
     font-weight:700;
     color:var(--text-muted);
     letter-spacing:0.05em;
-    padding-left:2px;
+  }
+  .category-icon{
+    font-size:14px;
+    line-height:1;
+    flex-shrink:0;
+  }
+  .btn-help-icon{
+    width:18px;
+    height:18px;
+    flex-shrink:0;
+    border-radius:50%;
+    background:var(--bg-elevated-2);
+    border:1px solid var(--border);
+    color:var(--text-muted);
+    font-size:11px;
+    font-weight:700;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    line-height:1;
   }
   .submode-selector{
     display:flex;
@@ -688,7 +713,8 @@
     gap:10px;
   }
   .measures-row .row-label{ font-size:14px; font-weight:600; }
-  .measures-row input[type="number"]{
+  .measures-row input[type="number"],
+  .measures-compact input[type="number"]{
     width:70px;
     padding:8px 6px;
     text-align:center;
@@ -702,7 +728,8 @@
     cursor:ns-resize;
     transition:border-color 0.2s, background-color 0.2s;
   }
-  .measures-row input[type="number"].touch-active{
+  .measures-row input[type="number"].touch-active,
+  .measures-compact input[type="number"].touch-active{
     border-color:var(--accent);
     background-color:var(--bg-elevated-2);
   }
@@ -806,6 +833,62 @@
     border-radius:var(--radius-m);
     font-size:13px;
     font-weight:600;
+  }
+  /* ---------- 縦幅削減 (自力タップ/テンポキープ/妨害) ----------
+     スマートフォンで結果表示まで含めても極力1画面に収まるようにするための調整。
+     操作に関わるボタンのサイズ・タップ領域は変えず、余白・フォントサイズ・レイアウトのみ調整する */
+  #screen-mode3, #screen-mode4, #screen-mode5{
+    gap:10px;
+    padding-top:14px;
+    padding-bottom:calc(12px + var(--safe-bottom));
+  }
+  #screen-mode3.showing-result .mode-prompt,
+  #screen-mode4.showing-result .mode-prompt,
+  #screen-mode5.showing-result .mode-prompt{
+    display:none;
+  }
+  #screen-mode3 .target-display,
+  #screen-mode4 .target-display,
+  #screen-mode5 .target-display{
+    padding:4px 0 0;
+  }
+  #screen-mode3 .big-num,
+  #screen-mode4 .big-num,
+  #screen-mode5 .big-num{
+    font-size:36px;
+  }
+  #screen-mode3 .mode-prompt,
+  #screen-mode4 .mode-prompt,
+  #screen-mode5 .mode-prompt{
+    font-size:13px;
+  }
+  #screen-mode4 .tk-top-row,
+  #screen-mode5 .tk-top-row{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    gap:24px;
+  }
+  #screen-mode4 .tk-top-row .measures-compact,
+  #screen-mode5 .tk-top-row .measures-compact{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+  }
+  #screen-mode4 .tk-top-row .measures-compact .row-label,
+  #screen-mode5 .tk-top-row .measures-compact .row-label{
+    font-size:12px;
+  }
+  #screen-mode4 .tap-summary,
+  #screen-mode5 .tap-summary,
+  #screen-mode3 .tap-summary{
+    padding:10px 8px;
+  }
+  #screen-mode3 .tap-result,
+  #screen-mode4 .tap-result,
+  #screen-mode5 .tap-result{
+    gap:10px;
   }
   .btn-retry{ background:var(--bg-elevated-2); border:1px solid var(--border); }
   /* ---------- footer nav ---------- */
@@ -1566,6 +1649,50 @@
     color:var(--text-muted);
   }
   .btn-preset-del{ color:var(--incorrect-bg); }
+  /* ---------- ルール解説モーダル ---------- */
+  #help-backdrop{
+    display:none;
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.55);
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    z-index:120;
+  }
+  #help-backdrop.show{ display:flex; }
+  #help-box{
+    width:100%;
+    max-width:440px;
+    max-height:82vh;
+    background:var(--bg-elevated);
+    border:1px solid var(--border);
+    border-radius:var(--radius-l);
+    padding:18px;
+    display:flex;
+    flex-direction:column;
+    gap:14px;
+    overflow:hidden;
+  }
+  .help-content{
+    overflow-y:auto;
+    font-size:14px;
+    line-height:1.6;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    padding-right:2px;
+  }
+  .help-content h4{
+    font-size:14px;
+    font-weight:700;
+    color:var(--accent);
+    margin:6px 0 0 0;
+  }
+  .help-content p{
+    margin:0;
+    color:var(--text-muted);
+  }
 </style>
 </head>
 <body>
@@ -1593,7 +1720,11 @@
       <div class="top-menu">
 
         <div class="category-block">
-          <div class="category-title" data-i18n="categoryListening"></div>
+          <div class="category-title-row">
+            <span class="category-icon" aria-hidden="true">&#128066;</span>
+            <span class="category-title" data-i18n="categoryListening"></span>
+            <button class="btn-help-icon" data-help-topic="listen" type="button" aria-label="help">?</button>
+          </div>
           <div class="submode-selector" data-submode-selector>
             <button type="button" class="active" data-submode-value="unlimited" data-i18n="submodeUnlimitedLabel"></button>
             <button type="button" data-submode-value="survival" data-i18n="submodeSurvivalLabel"></button>
@@ -1610,7 +1741,11 @@
         </div>
 
         <div class="category-block">
-          <div class="category-title" data-i18n="categoryTap"></div>
+          <div class="category-title-row">
+            <span class="category-icon" aria-hidden="true">&#9757;&#65039;</span>
+            <span class="category-title" data-i18n="categoryTap"></span>
+            <button class="btn-help-icon" data-help-topic="tap" type="button" aria-label="help">?</button>
+          </div>
           <button class="menu-btn primary" data-nav="mode3" type="button">
             <span class="menu-icon">⁘</span>
             <span data-i18n="menuModeTap"></span>
@@ -1793,15 +1928,17 @@
         <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
         <button class="btn-open-presets" data-action="open-presets" type="button" data-i18n="presetsModalTitle"></button>
       </div>
-      <div class="target-display">
-        <div class="reveal-label" data-i18n="targetTempoLabel"></div>
-        <div class="big-num"><span data-tk-target-main>--</span></div>
+      <div class="tk-top-row">
+        <div class="target-display">
+          <div class="reveal-label" data-i18n="targetTempoLabel"></div>
+          <div class="big-num"><span data-tk-target-main>--</span></div>
+        </div>
+        <div class="measures-compact">
+          <label class="row-label" data-i18n="measuresLabel" for="input-measures"></label>
+          <input id="input-measures" type="number" inputmode="numeric" min="1" max="16" value="2">
+        </div>
       </div>
       <div class="mode-prompt" data-i18n="promptTempoKeep"></div>
-      <div class="measures-row">
-        <label class="row-label" data-i18n="measuresLabel" for="input-measures"></label>
-        <input id="input-measures" type="number" inputmode="numeric" min="1" max="16" value="2">
-      </div>
       <div class="measures-row">
         <label class="row-label" data-i18n="tempoKeepTapSoundLabel" for="toggle-tk-tapsound"></label>
         <input id="toggle-tk-tapsound" type="checkbox" class="settings-checkbox" checked>
@@ -1843,15 +1980,17 @@
         <button class="btn-reroll" data-action="reroll" type="button" data-i18n="btnRerollRandom"></button>
         <button class="btn-open-presets" data-action="open-presets" type="button" data-i18n="presetsModalTitle"></button>
       </div>
-      <div class="target-display">
-        <div class="reveal-label" data-i18n="targetTempoLabel"></div>
-        <div class="big-num"><span data-ob-target-main>--</span></div>
+      <div class="tk-top-row">
+        <div class="target-display">
+          <div class="reveal-label" data-i18n="targetTempoLabel"></div>
+          <div class="big-num"><span data-ob-target-main>--</span></div>
+        </div>
+        <div class="measures-compact">
+          <label class="row-label" data-i18n="measuresLabel" for="input-measures-obstruct"></label>
+          <input id="input-measures-obstruct" type="number" inputmode="numeric" min="1" max="16" value="2">
+        </div>
       </div>
       <div class="mode-prompt" data-i18n="promptObstruct"></div>
-      <div class="measures-row">
-        <label class="row-label" data-i18n="measuresLabel" for="input-measures-obstruct"></label>
-        <input id="input-measures-obstruct" type="number" inputmode="numeric" min="1" max="16" value="2">
-      </div>
       <div class="measures-row">
         <label class="row-label" data-i18n="tempoKeepTapSoundLabel" for="toggle-obstruct-tapsound"></label>
         <input id="toggle-obstruct-tapsound" type="checkbox" class="settings-checkbox" checked>
@@ -2067,6 +2206,16 @@
   </div>
 </div>
 
+<div id="help-backdrop">
+  <div id="help-box" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <div class="modal-title" data-help-title></div>
+      <button id="btn-help-close" type="button" aria-label="close">✕</button>
+    </div>
+    <div class="help-content" data-help-content></div>
+  </div>
+</div>
+
 <script>
 'use strict';
 
@@ -2098,6 +2247,18 @@ var I18N = {
     menuSettings: '設定',
     categoryListening: '聴き取りトレーニング',
     categoryTap: 'タップでトレーニング',
+    helpListenTitle: '聴き取りトレーニングとは',
+    helpListenIntro: 'テンポを耳で聴いて、そのBPM(1分間の拍数)を当てるモードです。選択肢から選ぶ「選択」と、数値を直接入力する「入力」の2種類があります。',
+    helpListenScoring: '回答は◯(正解)・△(隣接するテンポ)・✕(それ以外)の3段階で判定され、それぞれ8・3・1ポイントを獲得します。',
+    helpListenUnlimitedBody: '制限時間やライフはなく、好きなだけ問題に挑戦できます。じっくり練習したいときに向いています。',
+    helpListenSurvivalBody: 'ライフは3つ。誤答すると1つ減り、0になるとゲームオーバーです。5問連続で正解(または隣接)するとライフが1つ増えます。',
+    helpListenChallenge60Body: '60秒間に何問正解できるかに挑戦するモードです。音が鳴り続け、回答するとすぐ次の問題に進みます。',
+    helpTapTitle: 'タップでトレーニングとは',
+    helpTapIntro: '耳に頼らず、自分の感覚だけでテンポを刻む力を鍛えるモードです。',
+    helpTapModeTapBody: 'お題のテンポを見てから、その感覚で8回タップします。実際のタップ間隔がグラフで表示されます。',
+    helpTapModeKeepBody: 'お題のテンポで4拍のお手本が鳴った後、音が消えてもそのままの感覚でタップを続けます。',
+    helpTapModeObstructBody: 'テンポキープと同じ流れですが、お手本の後は無音にならず、わざと違うテンポの音が鳴り続けます。惑わされずにお題のテンポを保ってタップを続けましょう。',
+    helpTapPresetsBody: 'それぞれのモードにある「課題テンポ」ボタンから、よく使うテンポに名前を付けて保存・呼び出しできます。お題テンポの数値をタップすると、手動で好きな数値に変更することもできます。',
     submodeUnlimitedLabel: '無制限',
     submodeSurvivalLabel: '生き残り',
     submodeChallenge60Label: '60秒チャレンジ',
@@ -2206,6 +2367,18 @@ var I18N = {
     menuSettings: 'Settings',
     categoryListening: 'Listening Training',
     categoryTap: 'Tap Training',
+    helpListenTitle: 'About Listening Training',
+    helpListenIntro: 'Listen to a tempo and guess its BPM. Choose between "Select" (pick from options) and "Input" (type the number directly).',
+    helpListenScoring: 'Answers are judged as \u25cb (correct), \u25b3 (an adjacent tempo), or \u2715 (anything else), worth 8, 3, and 1 points.',
+    helpListenUnlimitedBody: 'No time limit or lives \u2014 play as many questions as you like. Good for relaxed practice.',
+    helpListenSurvivalBody: 'You start with 3 lives. A wrong answer costs one; 5 correct (or near) answers in a row earns one back. The game ends at 0 lives.',
+    helpListenChallenge60Body: 'See how many questions you can answer correctly in 60 seconds. The tempo keeps playing and the next question starts as soon as you answer.',
+    helpTapTitle: 'About Tap Training',
+    helpTapIntro: 'Train your internal sense of tempo without relying on your ears.',
+    helpTapModeTapBody: 'See the target tempo, then tap 8 times at what you think that tempo feels like. Your actual tap intervals are shown on a graph.',
+    helpTapModeKeepBody: 'A 4-beat example plays at the target tempo, then goes silent \u2014 keep tapping from memory at the same tempo.',
+    helpTapModeObstructBody: 'Same as Tempo Keep, but instead of going silent, a different tempo keeps playing to throw you off. Stay on the original target tempo despite the distraction.',
+    helpTapPresetsBody: 'Use the "Preset Tempos" button in each mode to save and recall named tempos. You can also tap the target tempo number to type in a specific value manually.',
     submodeUnlimitedLabel: 'Unlimited',
     submodeSurvivalLabel: 'Survival',
     submodeChallenge60Label: '60s Challenge',
@@ -2790,6 +2963,42 @@ function openPresetsModal(type){
 
 function closePresetsModal(){
   document.getElementById('presets-backdrop').classList.remove('show');
+}
+
+/* トップ画面の各カテゴリの(?)から開くルール解説モーダル */
+function openHelpModal(topic){
+  var backdrop = document.getElementById('help-backdrop');
+  var titleEl = qs(backdrop, '[data-help-title]');
+  var content = qs(backdrop, '[data-help-content]');
+
+  if (topic === 'listen'){
+    titleEl.textContent = t('helpListenTitle');
+    content.innerHTML =
+      '<p>' + t('helpListenIntro') + '</p>' +
+      '<p>' + t('helpListenScoring') + '</p>' +
+      '<h4>' + t('submodeUnlimitedLabel') + '</h4>' +
+      '<p>' + t('helpListenUnlimitedBody') + '</p>' +
+      '<h4>' + t('submodeSurvivalLabel') + '</h4>' +
+      '<p>' + t('helpListenSurvivalBody') + '</p>' +
+      '<h4>' + t('submodeChallenge60Label') + '</h4>' +
+      '<p>' + t('helpListenChallenge60Body') + '</p>';
+  } else if (topic === 'tap'){
+    titleEl.textContent = t('helpTapTitle');
+    content.innerHTML =
+      '<p>' + t('helpTapIntro') + '</p>' +
+      '<h4>' + t('menuModeTap') + '</h4>' +
+      '<p>' + t('helpTapModeTapBody') + '</p>' +
+      '<h4>' + t('menuModeTempoKeep') + '</h4>' +
+      '<p>' + t('helpTapModeKeepBody') + '</p>' +
+      '<h4>' + t('menuModeObstruct') + '</h4>' +
+      '<p>' + t('helpTapModeObstructBody') + '</p>' +
+      '<p>' + t('helpTapPresetsBody') + '</p>';
+  }
+  backdrop.classList.add('show');
+}
+
+function closeHelpModal(){
+  document.getElementById('help-backdrop').classList.remove('show');
 }
 
 /* ホイール／縦スワイプで値を上下操作する共通ユーティリティ(scroll-and-swipe-spec.md準拠)。
@@ -3840,6 +4049,7 @@ function renderTapScreen(){
   qs(screenEl, '[data-target-value]').textContent = formatTempo(rs.tempo);
   qs(screenEl, '[data-tap-count]').textContent = '0';
   qs(screenEl, '[data-tap-result]').classList.remove('show');
+  screenEl.classList.remove('showing-result');
   qs(screenEl, '[data-graph-container]').innerHTML = '';
 }
 
@@ -3886,6 +4096,7 @@ function finishTapRound(){
   qs(screenEl, '[data-graph-container]').innerHTML = graphHtml;
 
   qs(screenEl, '[data-tap-result]').classList.add('show');
+  screenEl.classList.add('showing-result');
 
   recordHistory({
     type: 'tap',
@@ -3928,6 +4139,7 @@ function renderTempoKeepScreen(){
   actionBtn.classList.remove('is-tap-mode');
   qs(actionBtn, '[data-tk-action-label]').textContent = t('tempoKeepPlayCaption');
   qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
+  screenEl.classList.remove('showing-result');
   updateTempoKeepProgress();
 }
 
@@ -3947,6 +4159,7 @@ function startTempoKeepCountIn(){
 
   var screenEl = document.getElementById('screen-mode4');
   qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
+  screenEl.classList.remove('showing-result');
   qs(screenEl, '#input-measures').disabled = true;
   var actionBtn = qs(screenEl, '#btn-tempokeep-action');
   actionBtn.classList.add('is-tap-mode');
@@ -4026,6 +4239,7 @@ function finishTempoKeepRound(){
   var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes);
   qs(screenEl, '[data-tk-graph-container]').innerHTML = graphHtml;
   qs(screenEl, '[data-tempokeep-result]').classList.add('show');
+  screenEl.classList.add('showing-result');
 
   qs(screenEl, '#input-measures').disabled = false;
   var actionBtn = qs(screenEl, '#btn-tempokeep-action');
@@ -4082,6 +4296,7 @@ function renderObstructScreen(){
   actionBtn.classList.remove('is-tap-mode');
   qs(actionBtn, '[data-ob-action-label]').textContent = t('tempoKeepPlayCaption');
   qs(screenEl, '[data-obstruct-result]').classList.remove('show');
+  screenEl.classList.remove('showing-result');
   updateObstructProgress();
 }
 
@@ -4101,6 +4316,7 @@ function startObstructCountIn(){
 
   var screenEl = document.getElementById('screen-mode5');
   qs(screenEl, '[data-obstruct-result]').classList.remove('show');
+  screenEl.classList.remove('showing-result');
   qs(screenEl, '#input-measures-obstruct').disabled = true;
   var actionBtn = qs(screenEl, '#btn-obstruct-action');
   actionBtn.classList.add('is-tap-mode');
@@ -4190,6 +4406,7 @@ function finishObstructRound(){
   var graphHtml = buildTempoGraphSVG(rs.tempos, rs.tempo, rs.xTimes, rs.distractorSegments);
   qs(screenEl, '[data-ob-graph-container]').innerHTML = graphHtml;
   qs(screenEl, '[data-obstruct-result]').classList.add('show');
+  screenEl.classList.add('showing-result');
 
   qs(screenEl, '#input-measures-obstruct').disabled = false;
   var actionBtn = qs(screenEl, '#btn-obstruct-action');
@@ -4271,8 +4488,8 @@ function stopObstructAll(){
    グラフ描画 (SVG) — 自力タップ・テンポキープ・妨害で共用
    ================================================================== */
 function buildTempoGraphSVG(tapTempos, targetTempo, xTimes, distractorSegments){
-  var width = 300, height = 176;
-  var marginLeft = 34, marginRight = 14, marginTop = 16, marginBottom = 22;
+  var width = 300, height = 152;
+  var marginLeft = 34, marginRight = 14, marginTop = 14, marginBottom = 20;
   var plotW = width - marginLeft - marginRight;
   var plotH = height - marginTop - marginBottom;
 
@@ -4870,6 +5087,16 @@ function initEvents(){
   document.getElementById('btn-presets-close').addEventListener('click', closePresetsModal);
   document.getElementById('presets-backdrop').addEventListener('click', function(evt){
     if (evt.target === this) closePresetsModal();
+  });
+
+  document.getElementById('btn-help-close').addEventListener('click', closeHelpModal);
+  document.getElementById('help-backdrop').addEventListener('click', function(evt){
+    if (evt.target === this) closeHelpModal();
+  });
+  qsa(document, '.btn-help-icon').forEach(function(btn){
+    btn.addEventListener('click', function(){
+      openHelpModal(this.getAttribute('data-help-topic'));
+    });
   });
 
   document.getElementById('btn-preset-save').addEventListener('click', function(){
