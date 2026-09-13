@@ -180,12 +180,12 @@
   #screen-top{
     justify-content:flex-start;
     align-items:stretch;
-    padding-top:6vh;
+    padding-top:4vh;
     gap:0;
   }
   .title-block{
     text-align:center;
-    margin-bottom:4vh;
+    margin-bottom:2.5vh;
   }
   .title-en{
     font-family:var(--font-display);
@@ -209,8 +209,8 @@
   .category-block{
     display:flex;
     flex-direction:column;
-    gap:10px;
-    margin-bottom:20px;
+    gap:8px;
+    margin-bottom:16px;
   }
   .category-title-row{
     display:flex;
@@ -254,7 +254,7 @@
   }
   .submode-selector button{
     flex:1;
-    padding:9px 4px;
+    padding:7px 4px;
     border-radius:999px;
     font-size:12px;
     font-weight:600;
@@ -270,7 +270,7 @@
     align-items:center;
     gap:14px;
     width:100%;
-    padding:16px 18px;
+    padding:14px 18px;
     background:var(--bg-elevated);
     border:1px solid var(--border);
     border-radius:var(--radius-m);
@@ -291,7 +291,7 @@
     border-color:var(--accent);
   }
   .menu-btn.secondary{
-    padding:12px 18px;
+    padding:10px 18px;
     font-size:14px;
     font-weight:500;
     color:var(--text-muted);
@@ -694,6 +694,12 @@
     display:inline-block;
     border-bottom:2px dashed var(--border);
     padding-bottom:2px;
+    touch-action:pan-x;
+    border-radius:var(--radius-s);
+    transition:background-color 0.2s;
+  }
+  .target-display .big-num.tap-editable.touch-active{
+    background-color:var(--bg-elevated-2);
   }
   .target-display .big-num .target-edit-input{
     font-family:var(--font-display);
@@ -1725,18 +1731,21 @@
             <span class="category-title" data-i18n="categoryListening"></span>
             <button class="btn-help-icon" data-help-topic="listen" type="button" aria-label="help">?</button>
           </div>
-          <div class="submode-selector" data-submode-selector>
-            <button type="button" class="active" data-submode-value="unlimited" data-i18n="submodeUnlimitedLabel"></button>
-            <button type="button" data-submode-value="survival" data-i18n="submodeSurvivalLabel"></button>
-            <button type="button" data-submode-value="challenge60" data-i18n="submodeChallenge60Label"></button>
+          <div class="submode-selector" data-listen-mode-selector>
+            <button type="button" class="active" data-listen-mode-value="select" data-i18n="menuModeSelect"></button>
+            <button type="button" data-listen-mode-value="input" data-i18n="menuModeInput"></button>
           </div>
-          <button class="menu-btn primary" data-nav="mode1" type="button">
-            <span class="menu-icon">♩</span>
-            <span data-i18n="menuModeSelect"></span>
+          <button class="menu-btn primary" data-action="enter-listen" data-submode-value="unlimited" type="button">
+            <span class="menu-icon">&#8734;</span>
+            <span data-i18n="submodeUnlimitedLabel"></span>
           </button>
-          <button class="menu-btn primary" data-nav="mode2" type="button">
-            <span class="menu-icon">#</span>
-            <span data-i18n="menuModeInput"></span>
+          <button class="menu-btn primary" data-action="enter-listen" data-submode-value="survival" type="button">
+            <span class="menu-icon">&#10084;</span>
+            <span data-i18n="submodeSurvivalLabel"></span>
+          </button>
+          <button class="menu-btn primary" data-action="enter-listen" data-submode-value="challenge60" type="button">
+            <span class="menu-icon">&#9201;</span>
+            <span data-i18n="submodeChallenge60Label"></span>
           </button>
         </div>
 
@@ -2486,6 +2495,7 @@ var state = {
   lang: 'ja',
   screen: 'top',
   listenSubMode: 'unlimited',
+  selectedListenMode: 'select',
   settings: {
     clickVolume: 0.8,
     clickSound: 'click',
@@ -2689,6 +2699,17 @@ function commitManualTempo(type, value){
   if (type === 'tap') startTapRound(value);
   else if (type === 'tempokeep') startTempoKeepRound(value);
   else if (type === 'obstruct') startObstructRound(value);
+}
+
+/* お題テンポのスクロール＆スワイプ操作: 1段階ごとにテンポを1ずつ増減する。
+   数値をタップして手動編集した時と同様、課題との紐付けは解除する */
+function adjustTargetTempo(type, delta){
+  var rs = roundState[type];
+  if (!rs || rs.tempo === null) return;
+  var v = Math.max(20, Math.min(400, rs.tempo + delta));
+  if (v === rs.tempo) return;
+  rs.presetName = null;
+  commitManualTempo(type, v);
 }
 
 /* HTMLへの埋め込み用に最低限のエスケープを行う(課題名はユーザーが自由に入力する文字列のため) */
@@ -3390,6 +3411,36 @@ function ensureAudioContext(){
     state.audioCtx.resume();
   }
   return state.audioCtx;
+}
+
+/* タップ音などの初回再生時に生じがちな遅延(AudioContextの初回生成・resume()にかかる時間)を
+   減らすため、ユーザーが画面のどこかに最初に触れた瞬間に前もって準備しておく。
+   ごく小さな無音に近いクリックを一度鳴らし、音声パイプライン自体も温めておく */
+function warmUpAudioContext(){
+  try {
+    var ctx = ensureAudioContext();
+    var osc = ctx.createOscillator();
+    var gain = ctx.createGain();
+    osc.connect(gain).connect(ctx.destination);
+    gain.gain.setValueAtTime(0.00001, ctx.currentTime);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.01);
+  } catch (e){ /* 準備に失敗しても実際の操作時に通常通り生成されるため無視してよい */ }
+}
+
+function initAudioWarmup(){
+  var fired = false;
+  function handler(){
+    if (fired) return;
+    fired = true;
+    warmUpAudioContext();
+    document.removeEventListener('pointerdown', handler);
+    document.removeEventListener('touchstart', handler);
+    document.removeEventListener('click', handler);
+  }
+  document.addEventListener('pointerdown', handler, { passive: true });
+  document.addEventListener('touchstart', handler, { passive: true });
+  document.addEventListener('click', handler, { passive: true });
 }
 
 function trackNode(node){
@@ -4787,9 +4838,9 @@ function applyTheme(){
   document.documentElement.setAttribute('data-theme', state.settings.theme);
 }
 
-function renderSubModeSelector(){
-  qsa(document, '[data-submode-selector] button').forEach(function(b){
-    b.classList.toggle('active', b.getAttribute('data-submode-value') === state.listenSubMode);
+function renderListenModeSelector(){
+  qsa(document, '[data-listen-mode-selector] button').forEach(function(b){
+    b.classList.toggle('active', b.getAttribute('data-listen-mode-value') === state.selectedListenMode);
   });
 }
 
@@ -4848,10 +4899,10 @@ function initEvents(){
     });
   });
 
-  qsa(document, '[data-submode-selector] button').forEach(function(btn){
+  qsa(document, '[data-listen-mode-selector] button').forEach(function(btn){
     btn.addEventListener('click', function(){
-      state.listenSubMode = this.getAttribute('data-submode-value');
-      renderSubModeSelector();
+      state.selectedListenMode = this.getAttribute('data-listen-mode-value');
+      renderListenModeSelector();
     });
   });
 
@@ -4863,6 +4914,12 @@ function initEvents(){
       var modeType = screenEl.getAttribute('data-mode');
 
       if (action === 'back-top'){ showScreen('top'); return; }
+
+      if (action === 'enter-listen'){
+        state.listenSubMode = actionEl.getAttribute('data-submode-value');
+        showScreen(state.selectedListenMode === 'input' ? 'mode2' : 'mode1');
+        return;
+      }
 
       if (action === 'reroll'){
         if (modeType === 'select' || modeType === 'input'){ rerollRound(modeType); }
@@ -5002,6 +5059,10 @@ function initEvents(){
   enableTargetTapEdit('screen-mode3', '.big-num', 'tap');
   enableTargetTapEdit('screen-mode4', '.big-num', 'tempokeep');
   enableTargetTapEdit('screen-mode5', '.big-num', 'obstruct');
+
+  bindScrollSwipe(qs(document.getElementById('screen-mode3'), '.big-num'), function(){ adjustTargetTempo('tap', 1); }, function(){ adjustTargetTempo('tap', -1); }, 1);
+  bindScrollSwipe(qs(document.getElementById('screen-mode4'), '.big-num'), function(){ adjustTargetTempo('tempokeep', 1); }, function(){ adjustTargetTempo('tempokeep', -1); }, 1);
+  bindScrollSwipe(qs(document.getElementById('screen-mode5'), '.big-num'), function(){ adjustTargetTempo('obstruct', 1); }, function(){ adjustTargetTempo('obstruct', -1); }, 1);
 
   qsa(document, '[data-history-filters] .filter-btn').forEach(function(btn){
     btn.addEventListener('click', function(){
@@ -5241,9 +5302,10 @@ function init(){
   loadHistoryFromStorage();
   applyI18n();
   applyTheme();
-  renderSubModeSelector();
+  renderListenModeSelector();
   updateInstallButtonVisibility();
   try { initPendulumMotion(); } catch (e){ console.warn('pendulum init failed:', e); }
+  initAudioWarmup();
   initEvents();
 }
 
