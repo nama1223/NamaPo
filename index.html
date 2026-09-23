@@ -2265,7 +2265,7 @@ var I18N = {
     helpTapTitle: 'タップでトレーニングとは',
     helpTapIntro: '耳に頼らず、自分の感覚だけでテンポを刻む力を鍛えるモードです。',
     helpTapModeTapBody: 'お題のテンポを見てから、その感覚で8回タップします。実際のタップ間隔がグラフで表示されます。',
-    helpTapModeKeepBody: 'お題のテンポで4拍のお手本が鳴った後、音が消えてもそのままの感覚でタップを続けます。',
+    helpTapModeKeepBody: 'お題のテンポで8拍のお手本が鳴った後、音が消えてもそのままの感覚でタップを続けます。',
     helpTapModeObstructBody: 'テンポキープと同じ流れですが、お手本の後は無音にならず、わざと違うテンポの音が鳴り続けます。惑わされずにお題のテンポを保ってタップを続けましょう。',
     helpTapPresetsBody: 'それぞれのモードにある「課題テンポ」ボタンから、よく使うテンポに名前を付けて保存・呼び出しできます。お題テンポの数値をタップすると、手動で好きな数値に変更することもできます。',
     submodeUnlimitedLabel: '無制限',
@@ -2289,8 +2289,8 @@ var I18N = {
     btnTapAgain: 'もう一回',
     measuresLabel: '小節数',
     tempoKeepTapSoundLabel: '自分のタップ音',
-    tempoKeepPlayCaption: 'タップで4拍のお手本を再生',
-    promptTempoKeep: '再生ボタンで4拍のお手本を聞いたら、無音になってもそのままタップし続けてテンポをキープしましょう',
+    tempoKeepPlayCaption: 'タップで8拍のお手本を再生',
+    promptTempoKeep: '再生ボタンで8拍のお手本を聞いたら、無音になってもそのままタップし続けてテンポをキープしましょう',
     promptObstruct: 'お手本のあとに違うテンポの音が鳴り続けても、惑わされずにお題のテンポでタップし続けましょう',
     challengeIntro: '60秒以内の正答数にチャレンジ！',
     btnChallengeStart: 'スタート',
@@ -2385,7 +2385,7 @@ var I18N = {
     helpTapTitle: 'About Tap Training',
     helpTapIntro: 'Train your internal sense of tempo without relying on your ears.',
     helpTapModeTapBody: 'See the target tempo, then tap 8 times at what you think that tempo feels like. Your actual tap intervals are shown on a graph.',
-    helpTapModeKeepBody: 'A 4-beat example plays at the target tempo, then goes silent \u2014 keep tapping from memory at the same tempo.',
+    helpTapModeKeepBody: 'An 8-beat example plays at the target tempo, then goes silent \u2014 keep tapping from memory at the same tempo.',
     helpTapModeObstructBody: 'Same as Tempo Keep, but instead of going silent, a different tempo keeps playing to throw you off. Stay on the original target tempo despite the distraction.',
     helpTapPresetsBody: 'Use the "Preset Tempos" button in each mode to save and recall named tempos. You can also tap the target tempo number to type in a specific value manually.',
     submodeUnlimitedLabel: 'Unlimited',
@@ -2409,8 +2409,8 @@ var I18N = {
     btnTapAgain: 'Again',
     measuresLabel: 'Measures',
     tempoKeepTapSoundLabel: 'My tap sound',
-    tempoKeepPlayCaption: 'Tap to play a 4-beat example',
-    promptTempoKeep: 'Play the 4-beat example, then keep tapping the same tempo once it goes silent',
+    tempoKeepPlayCaption: 'Tap to play an 8-beat example',
+    promptTempoKeep: 'Play the 8-beat example, then keep tapping the same tempo once it goes silent',
     promptObstruct: "After the example, a different tempo keeps playing — don't be thrown off, keep tapping the target tempo",
     challengeIntro: 'Challenge: how many can you get right in 60 seconds?',
     btnChallengeStart: 'Start',
@@ -3413,6 +3413,44 @@ function ensureAudioContext(){
   return state.audioCtx;
 }
 
+/* AudioContextが確実に'running'になってからコールバックを呼ぶ。
+   resume()は非同期のため、呼び出した直後にctx.currentTimeを読むと、
+   ブラウザが省電力等で自動的にsuspendしていた場合、実際にはまだ再開しきっていない
+   古い(止まった)時刻を掴んでしまうことがある。テンポキープ/妨害モードでは
+   このctx.currentTimeを基準にお手本の開始時刻をperformance.now()の時間軸へ
+   変換しているため、これがズレるとお手本とタップ判定の最初の1拍だけがズレて見える。
+   resumeの完了を待ってからスケジューリングすることでこれを防ぐ */
+function withAudioContextReady(callback){
+  var ctx = ensureAudioContext();
+  if (ctx.state === 'running'){
+    callback(ctx);
+    return;
+  }
+  ctx.resume().then(function(){
+    callback(ctx);
+  }).catch(function(){
+    callback(ctx); /* resumeに失敗しても、そのまま通常通り進める(致命的ではない) */
+  });
+}
+
+/* ctx.currentTime(AudioContextの時刻)がtargetCtxTimeに到達した"実際の瞬間"の
+   performance.now()をコールバックへ渡す。
+   「ctx.currentTimeとperformance.now()は同じ速さで進むはず」という前提で
+   1回だけ計算式で変換すると、環境によっては数十ms単位の系統的なズレが生じることがあった
+   (テンポキープ/妨害モードで、お手本最後の拍と最初のタップの間隔だけが常に短く判定される不具合)。
+   requestAnimationFrameで到達を直接監視することで、この変換に伴う誤差を
+   画面更新間隔(概ね16ms程度)まで抑える */
+function waitForCtxTime(ctx, targetCtxTime, callback){
+  function poll(){
+    if (ctx.currentTime >= targetCtxTime){
+      callback(performance.now());
+      return;
+    }
+    requestAnimationFrame(poll);
+  }
+  poll();
+}
+
 /* タップ音などの初回再生時に生じがちな遅延(AudioContextの初回生成・resume()にかかる時間)を
    減らすため、ユーザーが画面のどこかに最初に触れた瞬間に前もって準備しておく。
    ごく小さな無音に近いクリックを一度鳴らし、音声パイプライン自体も温めておく */
@@ -3459,6 +3497,21 @@ function stopAllScheduledAudio(){
   cancelPendingBeatEffects();
 }
 
+var woodBufferCache = null; /* 'wood'音色のノイズバッファはテンポに依存しないため1回だけ生成して使い回す */
+function getWoodBuffer(ctx){
+  if (woodBufferCache && woodBufferCache.ctx === ctx) return woodBufferCache.buffer;
+  var dur = 0.055;
+  var bufferSize = Math.floor(ctx.sampleRate * dur);
+  var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+  var data = buffer.getChannelData(0);
+  for (var i = 0; i < bufferSize; i++){
+    var decay = Math.pow(1 - i / bufferSize, 3);
+    data[i] = (Math.random() * 2 - 1) * decay;
+  }
+  woodBufferCache = { ctx: ctx, buffer: buffer };
+  return buffer;
+}
+
 function scheduleClick(ctx, time, opts){
   opts = opts || {};
   var accent = !!opts.accent;
@@ -3470,13 +3523,7 @@ function scheduleClick(ctx, time, opts){
 
   if (timbre === 'wood'){
     var dur = 0.055;
-    var bufferSize = Math.floor(ctx.sampleRate * dur);
-    var buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    var data = buffer.getChannelData(0);
-    for (var i = 0; i < bufferSize; i++){
-      var decay = Math.pow(1 - i / bufferSize, 3);
-      data[i] = (Math.random() * 2 - 1) * decay;
-    }
+    var buffer = getWoodBuffer(ctx);
     var src = ctx.createBufferSource();
     src.buffer = buffer;
     var filter = ctx.createBiquadFilter();
@@ -3641,7 +3688,7 @@ function cancelPendingBeatEffects(){
 function playTempoPreview(tempo, screenEl){
   stopAllScheduledAudio();
   var ctx = ensureAudioContext();
-  var startDelay = 0.08;
+  var startDelay = 0.015;
   var interval = 60 / tempo;
   var startTime = ctx.currentTime + startDelay;
   var pulseEl = screenEl ? qs(screenEl, '[data-pulse]') : null;
@@ -3705,7 +3752,7 @@ function toggleTestPlay(){
   }
   stopAllScheduledAudio();
   var ctx = ensureAudioContext();
-  var startDelay = 0.08;
+  var startDelay = 0.015;
   var interval = 60 / TEST_PLAY_TEMPO;
   var startTime = ctx.currentTime + startDelay;
   for (var i = 0; i < 8; i++){
@@ -4207,6 +4254,7 @@ function startTempoKeepCountIn(){
   rs.expectedTaps = rs.measures * 4;
   rs.times = []; rs.tempos = []; rs.xTimes = [];
   rs.phase = 'countin';
+  rs.ignoreUntilMs = Infinity; /* 実際のスケジューリングが完了するまでの間に入るタップを無視する */
 
   var screenEl = document.getElementById('screen-mode4');
   qs(screenEl, '[data-tempokeep-result]').classList.remove('show');
@@ -4217,20 +4265,27 @@ function startTempoKeepCountIn(){
   qs(actionBtn, '[data-tk-action-label]').textContent = t('btnTapKeep');
   updateTempoKeepProgress();
 
-  var ctx = ensureAudioContext();
-  var startDelay = 0.08;
-  var interval = 60 / rs.tempo;
-  var startTime = ctx.currentTime + startDelay;
+  withAudioContextReady(function(ctx){
+    if (rs.phase !== 'countin') return; /* 待っている間にリトライ等で状態が変わっていたら何もしない */
+    var startDelay = 0.015;
+    var interval = 60 / rs.tempo;
+    var startTime = ctx.currentTime + startDelay;
+    var countInBeats = 8;
 
-  for (var i = 0; i < 4; i++){
-    var tm = startTime + i * interval;
-    scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects(tm, actionBtn);
-  }
+    for (var i = 0; i < countInBeats; i++){
+      var tm = startTime + i * interval;
+      if (i === 1) tm -= 0.015; /* 2拍目のみ、startDelay短縮の影響を相殺するため前倒し */
+      scheduleClick(ctx, tm, { accent: (i === 0 || i === 4) });
+      scheduleBeatEffects(tm, actionBtn);
+    }
 
-  var nowPerf = performance.now();
-  rs.ignoreUntilMs = nowPerf + (startDelay + 3.5 * interval) * 1000;
-  rs.times = [nowPerf + (startDelay + 3 * interval) * 1000];
+    var lastBeatCtxTime = startTime + (countInBeats - 1) * interval;
+    waitForCtxTime(ctx, lastBeatCtxTime, function(lastBeatPerfTime){
+      if (rs.phase !== 'countin') return; /* 監視中にリトライ等で状態が変わっていたら何もしない */
+      rs.ignoreUntilMs = lastBeatPerfTime + 0.5 * interval * 1000;
+      rs.times = [lastBeatPerfTime];
+    });
+  });
 }
 
 /* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン中はタップとして扱う */
@@ -4258,7 +4313,10 @@ function onTempoKeepTap(){
 
   if (rs.tapSound){
     var ctx = ensureAudioContext();
-    scheduleClick(ctx, ctx.currentTime, { accent: false });
+    /* 遅延ゼロでのスケジューリングは音声エンジン側で処理が間に合わずタイミングが
+       不安定になることがあるため、ごく短いリードタイムを与えて確実性を優先する。
+       採点用のタイムスタンプ(performance.now())はこの影響を受けない */
+    scheduleClick(ctx, ctx.currentTime + 0.015, { accent: false });
   }
 
   var now = performance.now();
@@ -4315,7 +4373,7 @@ function finishTempoKeepRound(){
 }
 
 /* ==================================================================
-   モード5 : 妨害 (基本仕様はテンポキープに準じる。お手本4拍のあとは無音にならず、
+   モード5 : 妨害 (基本仕様はテンポキープに準じる。お手本8拍のあとは無音にならず、
    お題とは違うテンポの音が2拍ごとに変わりながら鳴り続け、プレイヤーのテンポ感覚を惑わす)
    ================================================================== */
 function startObstructRound(manualTempo){
@@ -4364,6 +4422,7 @@ function startObstructCountIn(){
   rs.expectedTaps = rs.measures * 4;
   rs.times = []; rs.tempos = []; rs.xTimes = []; rs.distractorSegments = [];
   rs.phase = 'countin';
+  rs.ignoreUntilMs = Infinity; /* 実際のスケジューリングが完了するまでの間に入るタップを無視する */
 
   var screenEl = document.getElementById('screen-mode5');
   qs(screenEl, '[data-obstruct-result]').classList.remove('show');
@@ -4374,29 +4433,36 @@ function startObstructCountIn(){
   qs(actionBtn, '[data-ob-action-label]').textContent = t('btnTapKeep');
   updateObstructProgress();
 
-  var ctx = ensureAudioContext();
-  var startDelay = 0.08;
-  var interval = 60 / rs.tempo;
-  var startTime = ctx.currentTime + startDelay;
+  withAudioContextReady(function(ctx){
+    if (rs.phase !== 'countin') return; /* 待っている間にリトライ等で状態が変わっていたら何もしない */
+    var startDelay = 0.015;
+    var interval = 60 / rs.tempo;
+    var startTime = ctx.currentTime + startDelay;
+    var countInBeats = 8;
 
-  for (var i = 0; i < 4; i++){
-    var tm = startTime + i * interval;
-    scheduleClick(ctx, tm, { accent: i === 0 });
-    scheduleBeatEffects(tm, actionBtn);
-  }
+    for (var i = 0; i < countInBeats; i++){
+      var tm = startTime + i * interval;
+      if (i === 1) tm -= 0.015; /* 2拍目のみ、startDelay短縮の影響を相殺するため前倒し */
+      scheduleClick(ctx, tm, { accent: (i === 0 || i === 4) });
+      scheduleBeatEffects(tm, actionBtn);
+    }
 
-  var nowPerf = performance.now();
-  rs.ignoreUntilMs = nowPerf + (startDelay + 3.5 * interval) * 1000;
-  rs.times = [nowPerf + (startDelay + 3 * interval) * 1000];
+    var lastBeatCtxTime = startTime + (countInBeats - 1) * interval;
+    waitForCtxTime(ctx, lastBeatCtxTime, function(lastBeatPerfTime){
+      if (rs.phase !== 'countin') return; /* 監視中にリトライ等で状態が変わっていたら何もしない */
+      rs.ignoreUntilMs = lastBeatPerfTime + 0.5 * interval * 1000;
+      rs.times = [lastBeatPerfTime];
+    });
 
-  /* お手本4拍の後、無音にはせずそのまま妨害テンポの再生に切り替える */
-  var countInTotalMs = (startDelay + 4 * interval) * 1000;
-  rs.countInTimeoutId = setTimeout(function(){
-    if (rs.phase !== 'countin') return;
-    rs.countInTimeoutId = null;
-    rs.phase = 'distracting';
-    startObstructDistractor(rs.tempo, actionBtn);
-  }, countInTotalMs);
+    /* お手本8拍の後、無音にはせずそのまま妨害テンポの再生に切り替える */
+    var countInTotalMs = (startDelay + countInBeats * interval) * 1000;
+    rs.countInTimeoutId = setTimeout(function(){
+      if (rs.phase !== 'countin') return;
+      rs.countInTimeoutId = null;
+      rs.phase = 'distracting';
+      startObstructDistractor(rs.tempo, actionBtn);
+    }, countInTotalMs);
+  });
 }
 
 /* 再生/タップ兼用ボタン: 待機中は再生開始、カウントイン・妨害再生中はタップとして扱う */
@@ -4424,7 +4490,7 @@ function onObstructTap(){
 
   if (rs.tapSound){
     var ctx = ensureAudioContext();
-    scheduleClick(ctx, ctx.currentTime, { accent: false });
+    scheduleClick(ctx, ctx.currentTime + 0.015, { accent: false });
   }
 
   var now = performance.now();
