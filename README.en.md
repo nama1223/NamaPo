@@ -42,6 +42,11 @@ See "Screenshots & Guide" on the store page for details of each screen.
 
 A web app that runs in your browser (PWA supported). 
 
+## License & Redistribution
+
+For the policy on modification and redistribution, see "Modification & Redistribution" in the About section of the Nama Studio top page (that page is the latest version of the policy).
+https://nama1223.com/
+
 ## Author
 
 Nama Studio
